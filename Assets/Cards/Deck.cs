@@ -44,6 +44,7 @@ public class Deck : MonoBehaviour
 
         Sprite redSprite = GetSpriteForType("red");
         Sprite greenSprite = GetSpriteForType("green");
+        Sprite dragonSprite = GetSpriteForType("dragon");
         Sprite blueSprite = GetSpriteForType("blue");
 
         for (int i = 0; i < 5; i++)
@@ -51,7 +52,7 @@ public class Deck : MonoBehaviour
         for (int i = 0; i < 5; i++)
             deck.Add(new Card(spell, "Bag of Holding", 1, maxIncrease, greenSprite));
         for (int i = 0; i < 10; i++)
-            deck.Add(new Card(attacker, "Bear", 10, null, redSprite));
+            deck.Add(new Card(attacker, "Dragon", 10, null, dragonSprite));
         for (int i = 0; i < 10; i++)
             deck.Add(new Card(attacker, "Wolf", 5, null, redSprite));
         for (int i = 0; i < 10; i++)
