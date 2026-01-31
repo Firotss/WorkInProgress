@@ -42,6 +42,37 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Deck deck;
     [SerializeField] private TurnManager turnManager;
 
+    public static UIManager Instance;
+
+    [Header("Simple Preview")]
+    [SerializeField] private GameObject previewPanel; // Сама панель
+    [SerializeField] private RawImage previewImage;   // Компонент RawImage на этой панели
+
+    private void Awake()
+    {
+        Instance = this;
+        if (previewPanel != null)
+        {
+            previewImage.color = new Color(0, 0, 0, 0);
+        }
+        // ... остальной твой Awake
+    }
+
+    public void ShowPreview(Texture cardTexture)
+    {
+        if (previewPanel == null || previewImage == null || cardTexture == null) return;
+        previewImage.texture = cardTexture;
+        previewImage.color = new Color(1, 1, 1, 1);
+    }
+
+    public void HidePreview()
+    {
+        if (previewPanel != null)
+        {
+            previewImage.color = new Color(0, 0, 0, 0);
+        }
+    }
+
     private void Start()
     {
         FindReferences();
