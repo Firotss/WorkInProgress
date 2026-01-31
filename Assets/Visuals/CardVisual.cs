@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using System.Collections;
 
 public class CardVisual : MonoBehaviour
 {
@@ -26,13 +27,36 @@ public class CardVisual : MonoBehaviour
             cardText = existingText;
     }
 
-    public void Initialize(Card data, Hand hand)
+    public void Initialize(Card data, Hand hand = null)
     {
         cardData = data;
         ownerHand = hand;
         IsOnBoard = false;
         IsSelected = false;
         UpdateVisuals();
+    }
+
+    private Coroutine previewTimer;
+
+    private void OnMouseEnter()
+    {
+        previewTimer = StartCoroutine(WaitAndShow());
+    }
+
+    private void OnMouseExit()
+    {
+        if (previewTimer != null) StopCoroutine(previewTimer);
+        UIManager.Instance.HidePreview();
+    }
+
+    private IEnumerator WaitAndShow()
+    {
+        yield return new WaitForSeconds(0.5f);
+        
+        if (cardRenderer != null && cardRenderer.material.mainTexture != null)
+        {
+            UIManager.Instance.ShowPreview(cardRenderer.material.mainTexture);
+        }
     }
 
     public void UpdateVisuals()
@@ -109,22 +133,6 @@ public class CardVisual : MonoBehaviour
         if (GameManager.Instance != null && !GameManager.Instance.CanPlaceCard()) return;
         if (ownerHand != null)
             ownerHand.SelectCard(this);
-    }
-
-    private void OnMouseEnter()
-    {
-        if (!IsOnBoard && !IsSelected && cardRenderer != null)
-        {
-            // Don't show hover effect if player can't place cards
-            if (GameManager.Instance != null && !GameManager.Instance.CanPlaceCard()) return;
-            cardRenderer.material.color = originalColor * new Color(1.2f, 1.2f, 1.2f);
-        }
-    }
-
-    private void OnMouseExit()
-    {
-        if (!IsOnBoard && !IsSelected && cardRenderer != null)
-            cardRenderer.material.color = originalColor;
     }
 
     public CardType GetCardType()
