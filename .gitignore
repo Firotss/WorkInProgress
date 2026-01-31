@@ -87,8 +87,6 @@ Thumbs.db
 # Gradle cache (for Android builds)
 .gradle/
 
-# TextMesh Pro
-[Aa]ssets/TextMesh Pro/
 
 # VS config file
 .vsconfig
