@@ -128,7 +128,8 @@ public class Hand : MonoBehaviour
         {
             cardObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
             cardObj.transform.parent = transform;
-            cardObj.transform.localScale = new Vector3(1f, 0.1f, 1.4f);
+            cardObj.transform.rotation = Quaternion.Euler(0, 180, 0);
+            cardObj.transform.localScale = new Vector3(1f, 0.01f, 1.4f);
         }
         
         CardVisual cardVisual = cardObj.GetComponent<CardVisual>();
