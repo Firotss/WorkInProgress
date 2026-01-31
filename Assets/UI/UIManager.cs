@@ -359,7 +359,7 @@ public class UIManager : MonoBehaviour
             case GameState.PlayerTurn:
                 int placed = turnManager != null ? turnManager.PlacementsThisTurn : 0;
                 int maxPlace = turnManager != null ? turnManager.MaxPlacementsPerTurn : 3;
-                gameStateText.text = $"YOUR TURN — {placed}/{maxPlace} cards";
+                gameStateText.text = $"YOUR TURN — {placed}/{3} cards";
                 break;
             case GameState.ProcessingTurn:
                 gameStateText.text = "Resolving...";

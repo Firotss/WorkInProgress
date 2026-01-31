@@ -51,6 +51,11 @@ public class TurnManager : MonoBehaviour
 
         OnTurnStarted?.Invoke(CurrentTurn);
 
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.StartNewTurn();
+        }
+        
         gameManager.SetGameState(GameState.PlayerTurn);
     }
 

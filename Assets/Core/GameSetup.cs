@@ -118,32 +118,32 @@ public class GameSetup : MonoBehaviour
 
     private void CreateEnemyBoard()
     {
-        BoardManager[] boards = FindObjectsOfType<BoardManager>();
-        foreach (var b in boards)
-        {
-            if (!b.IsPlayerBoard) return;
-        }
+        // BoardManager[] boards = FindObjectsOfType<BoardManager>();
+        // foreach (var b in boards)
+        // {
+        //     if (!b.IsPlayerBoard) return;
+        // }
         
-        GameObject boardObj = new GameObject("EnemyBoard");
-        boardObj.transform.position = new Vector3(0, 0, 4f);
+        // GameObject boardObj = new GameObject("EnemyBoard");
+        // boardObj.transform.position = new Vector3(0, 0, 4f);
         
-        BoardManager board = boardObj.AddComponent<BoardManager>();
-        // Need to set isPlayerBoard to false via reflection
-        var field = typeof(BoardManager).GetField("isPlayerBoard", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (field != null)
-        {
-            field.SetValue(board, false);
-        }
+        // BoardManager board = boardObj.AddComponent<BoardManager>();
+        // // Need to set isPlayerBoard to false via reflection
+        // var field = typeof(BoardManager).GetField("isPlayerBoard", 
+        //     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        // if (field != null)
+        // {
+        //     field.SetValue(board, false);
+        // }
         
-        // Ground
-        GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
-        ground.name = "EnemyGround";
-        ground.transform.position = new Vector3(0, 0, 2.5f);
-        ground.transform.localScale = new Vector3(0.6f, 1, 0.5f);
-        ground.GetComponent<Renderer>().material.color = new Color(0.3f, 0.2f, 0.2f);
+        // // Ground
+        // GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        // ground.name = "EnemyGround";
+        // ground.transform.position = new Vector3(0, 0, 2.5f);
+        // ground.transform.localScale = new Vector3(0.6f, 1, 0.5f);
+        // ground.GetComponent<Renderer>().material.color = new Color(0.3f, 0.2f, 0.2f);
         
-        Debug.Log("Created: Enemy Board");
+        // Debug.Log("Created: Enemy Board");
     }
 
     private void CreatePlayerDeck()

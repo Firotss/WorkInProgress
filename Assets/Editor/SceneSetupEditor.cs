@@ -134,9 +134,7 @@ public class SceneSetupEditor : Editor
         Renderer renderer = ground.GetComponent<Renderer>();
         if (renderer != null)
         {
-            Material mat = new Material(Shader.Find("Standard"));
-            mat.color = new Color(0.2f, 0.25f, 0.3f);
-            renderer.material = mat;
+            renderer.enabled = false;
         }
         
         Debug.Log("Created: Player Board");
@@ -161,9 +159,7 @@ public class SceneSetupEditor : Editor
         Renderer renderer = ground.GetComponent<Renderer>();
         if (renderer != null)
         {
-            Material mat = new Material(Shader.Find("Standard"));
-            mat.color = new Color(0.3f, 0.2f, 0.2f);
-            renderer.material = mat;
+            renderer.enabled = false;
         }
         
         Debug.Log("Created: Enemy Board");
