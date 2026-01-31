@@ -1,46 +1,30 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>
-/// Simple AI that controls the enemy (monster) card plays.
-/// Plays random cards each turn.
-/// </summary>
 public class EnemyAI : MonoBehaviour
 {
     [Header("AI Settings")]
     [SerializeField] private int cardsPerTurn = 3;
+    [SerializeField] private GameObject cardPrefab; // ВАЖНО: Сложи тук префаба на картата в Unity!
 
     [Header("References")]
     [SerializeField] private BoardManager enemyBoard;
     [SerializeField] private Deck enemyDeck;
 
-    /// <summary>
-    /// Reference to the enemy's deck.
-    /// </summary>
-    public Deck EnemyDeck => enemyDeck;
-
-    /// <summary>
-    /// Sets references.
-    /// </summary>
     public void Initialize(BoardManager board, Deck deck)
     {
         enemyBoard = board;
         enemyDeck = deck;
     }
 
-    /// <summary>
-    /// Plays random cards on the enemy board.
-    /// </summary>
     public void PlayTurn()
     {
-        if (enemyBoard == null || enemyDeck == null)
-        {
-            Debug.LogWarning("EnemyAI: Missing board or deck reference!");
-            return;
-        }
+        if (enemyBoard == null || enemyDeck == null) return;
 
-        int toPlay = Mathf.Min(cardsPerTurn, enemyBoard.GetEmptyPlacementSlotCount());
-        Debug.Log($"Enemy playing {toPlay} cards (random columns)...");
+        int emptySlots = enemyBoard.GetEmptyPlacementSlotCount();
+        int toPlay = Mathf.Min(cardsPerTurn, emptySlots);
+
+        Debug.Log($"Enemy playing {toPlay} cards...");
 
         for (int i = 0; i < toPlay; i++)
         {
@@ -51,44 +35,58 @@ public class EnemyAI : MonoBehaviour
     private void PlayRandomCardInRandomColumn()
     {
         Card cardData = enemyDeck.DrawCard();
-        if (cardData == null)
-            return;
+        if (cardData == null) return;
 
         int col = GetRandomEmptyColumn();
+        
+        // Ако няма място, връщаме картата в тестето/сброса, за да не я губим
         if (col < 0)
         {
             enemyDeck.AddToDiscard(cardData);
             return;
         }
 
-        // Create card visual
-        GameObject cardObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        cardObj.transform.localScale = new Vector3(1f, 0.1f, 1.4f);
-        CardVisual cardVisual = cardObj.AddComponent<CardVisual>();
+        // Създаваме визуална карта от префаба
+        GameObject cardObj;
+        if (cardPrefab != null)
+        {
+            cardObj = Instantiate(cardPrefab);
+        }
+        else
+        {
+            // Fallback само ако си забравил префаба
+            cardObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cardObj.transform.localScale = new Vector3(1f, 0.1f, 1.4f);
+        }
+
+        CardVisual cardVisual = cardObj.GetComponent<CardVisual>();
+        if (cardVisual == null) cardVisual = cardObj.AddComponent<CardVisual>();
+        
+        // ВАЖНО: Вторият параметър е null, защото врагът няма "Ръка" (Hand component)
         cardVisual.Initialize(cardData, null);
 
         if (enemyBoard.PlaceCard(cardVisual, col))
         {
             SoundManager.Instance?.PlayCardPlaced();
-            Debug.Log($"Enemy played: {cardData.CardName} in column {col}");
         }
         else
         {
+            // Ако поставянето се провали, унищожаваме визуалния обект и връщаме картата
             Destroy(cardObj);
+            enemyDeck.AddToDiscard(cardData);
         }
     }
 
     private int GetRandomEmptyColumn()
     {
-        var empty = new System.Collections.Generic.List<int>();
+        var empty = new List<int>();
         int cols = enemyBoard != null ? enemyBoard.ColumnCount : 5;
         for (int c = 0; c < cols; c++)
         {
             if (enemyBoard.IsPlacementSlotEmpty(c))
                 empty.Add(c);
         }
-        if (empty.Count == 0)
-            return -1;
-        return empty[UnityEngine.Random.Range(0, empty.Count)];
+        if (empty.Count == 0) return -1;
+        return empty[Random.Range(0, empty.Count)];
     }
 }

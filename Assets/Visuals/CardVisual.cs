@@ -18,6 +18,20 @@ public class CardVisual : MonoBehaviour
     private Color originalColor;
     private TextMeshPro cardText;
 
+    private void Start()
+    {
+        if (GetComponent<CardHoverTrigger>() == null)
+        {
+            gameObject.AddComponent<CardHoverTrigger>();
+        }
+        
+        if (GetComponent<Collider>() == null)
+        {
+            BoxCollider col = gameObject.AddComponent<BoxCollider>();
+            col.size = new Vector3(1f, 1.5f, 0.2f); 
+        }
+    }
+
     private void Awake()
     {
         cardRenderer = GetComponent<Renderer>();

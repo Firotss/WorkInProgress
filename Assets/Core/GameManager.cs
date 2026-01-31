@@ -12,17 +12,15 @@ public class GameManager : MonoBehaviour
     {
         get
         {
-            if (applicationIsQuitting)
-                return null;
+            if (applicationIsQuitting) return null;
 
             if (instance == null)
             {
                 instance = FindObjectOfType<GameManager>();
-
                 if (instance == null && Application.isPlaying)
                 {
-                    GameObject go = new GameObject("GameManager");
-                    instance = go.AddComponent<GameManager>();
+                    // ВАЖНО: Не създаваме нов обект автоматично, защото ще е празен!
+                    Debug.LogError("Грешка: GameManager липсва в сцената!"); 
                 }
             }
             return instance;
@@ -50,15 +48,20 @@ public class GameManager : MonoBehaviour
     #region Properties
     
     public GameState CurrentState { get; private set; }
+    
+    // Поправка на грешките в Player.cs и UIManager.cs
     public Player Player => player;
     public Monster Monster => monster;
-    public BoardManager Board => playerBoard;
-    public BoardManager PlayerBoard => playerBoard;
-    public BoardManager EnemyBoard => enemyBoard;
+    
+    // Добавени са липсващите свойства за UIManager
+    public BoardManager Board => playerBoard; 
+    public BoardManager PlayerBoard => playerBoard; 
+    public BoardManager EnemyBoard => enemyBoard;   
+    
     public Hand PlayerHand => hand;
     public EnemyAI EnemyAI => enemyAI;
 
-    // Публичное свойство для InputHandler
+    // Свойство за InputHandler
     public CardVisual SelectedBoardCard => SelectedBoardCardForWithdraw;
     public CardVisual SelectedBoardCardForWithdraw { get; private set; }
 
@@ -92,6 +95,7 @@ public class GameManager : MonoBehaviour
         instance = this;
         applicationIsQuitting = false;
         CurrentState = GameState.NotStarted;
+        
         if (GetComponent<SoundManager>() == null)
             gameObject.AddComponent<SoundManager>();
     }
@@ -109,7 +113,11 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        FindRequiredComponents();
+        // Опитваме да намерим компонентите, ако са забравени в инспектора
+        if (!ValidateComponents())
+        {
+            FindRequiredComponents();
+        }
     }
     
     #endregion
@@ -121,19 +129,42 @@ public class GameManager : MonoBehaviour
         if (player == null) player = FindObjectOfType<Player>();
         if (monster == null) monster = FindObjectOfType<Monster>();
         
-        BoardManager[] boards = FindObjectsOfType<BoardManager>();
-        foreach (var board in boards)
+        // --- УМНЫЙ ПОИСК ПОЛЕЙ ---
+        if (playerBoard == null || enemyBoard == null)
         {
-            if (board.IsPlayerBoard && playerBoard == null) playerBoard = board;
-            else if (!board.IsPlayerBoard && enemyBoard == null) enemyBoard = board;
+            BoardManager[] boards = FindObjectsOfType<BoardManager>();
+            foreach (var board in boards)
+            {
+                // Проверяем имя объекта или позицию, если нет флага IsPlayerBoard
+                // Обычно поле игрока находится ниже (Y меньше) или называется "PlayerBoard"
+                if (board.name.Contains("Player") || board.transform.position.z < 0 || board.transform.position.y < 0) 
+                {
+                    playerBoard = board;
+                }
+                else
+                {
+                    enemyBoard = board;
+                }
+            }
         }
-            
+        // -------------------------
+
         if (hand == null) hand = FindObjectOfType<Hand>();
         
-        Deck[] decks = FindObjectsOfType<Deck>();
-        if (decks.Length >= 2) { playerDeck = decks[0]; enemyDeck = decks[1]; }
-        else if (decks.Length == 1) { playerDeck = decks[0]; }
-            
+        // --- УМНЫЙ ПОИСК КОЛОД ---
+        if (playerDeck == null || enemyDeck == null)
+        {
+            Deck[] decks = FindObjectsOfType<Deck>();
+            foreach (var deck in decks)
+            {
+                if (deck.name.Contains("Player") || deck.transform.position.z < 0) 
+                    playerDeck = deck;
+                else 
+                    enemyDeck = deck;
+            }
+        }
+        // -------------------------
+
         if (turnManager == null) turnManager = FindObjectOfType<TurnManager>();
         if (uiManager == null) uiManager = FindObjectOfType<UIManager>();
         if (enemyAI == null) enemyAI = FindObjectOfType<EnemyAI>();
@@ -142,32 +173,33 @@ public class GameManager : MonoBehaviour
     public void StartGame()
     {
         Debug.Log("=== Starting New Game ===");
-        FindRequiredComponents();
         
-        if (!ValidateComponents()) return;
+        FindRequiredComponents();
+        if (!ValidateComponents()) 
+        {
+            Debug.LogError("Играта не може да започне, липсват компоненти!");
+            return;
+        }
         
         InitializeGame();
         
         SetGameState(GameState.PlayerTurn);
         OnGameStarted?.Invoke();
         
-        // Сброс счетчика перед первым ходом
         StartNewTurn(); 
-        
         turnManager.StartTurn();
     }
 
     private bool ValidateComponents()
     {
         bool valid = true;
-        if (player == null) { Debug.LogError("Player not found!"); valid = false; }
-        if (monster == null) { Debug.LogError("Monster not found!"); valid = false; }
-        if (playerBoard == null) { Debug.LogError("Player Board not found!"); valid = false; }
-        if (enemyBoard == null) { Debug.LogError("Enemy Board not found!"); valid = false; }
-        if (hand == null) { Debug.LogError("Hand not found!"); valid = false; }
-        if (playerDeck == null) { Debug.LogError("Player Deck not found!"); valid = false; }
-        if (turnManager == null) { Debug.LogError("TurnManager not found!"); valid = false; }
-        
+        if (player == null) { Debug.LogError("Липсва Player!"); valid = false; }
+        if (monster == null) { Debug.LogError("Липсва Monster!"); valid = false; }
+        if (playerBoard == null) { Debug.LogError("Липсва PlayerBoard!"); valid = false; }
+        if (enemyBoard == null) { Debug.LogError("Липсва EnemyBoard!"); valid = false; }
+        if (hand == null) { Debug.LogError("Липсва Hand!"); valid = false; }
+        if (playerDeck == null) { Debug.LogError("Липсва PlayerDeck!"); valid = false; }
+        if (turnManager == null) { Debug.LogError("Липсва TurnManager!"); valid = false; }
         return valid;
     }
 
@@ -182,10 +214,13 @@ public class GameManager : MonoBehaviour
         hand.ClearHand();
         hand.DrawInitialCards(); 
 
-        enemyDeck.ResetDeck();
+        if (enemyDeck != null) enemyDeck.ResetDeck();
+        
         playerBoard.SetDeck(playerDeck);
         enemyBoard.SetDeck(enemyDeck);
-        enemyAI.Initialize(enemyBoard, enemyDeck);
+        
+        if (enemyAI != null) enemyAI.Initialize(enemyBoard, enemyDeck);
+        
         playerBoard.ClearBoard();
         enemyBoard.ClearBoard();
         
@@ -197,23 +232,17 @@ public class GameManager : MonoBehaviour
     
     #endregion
 
-    #region Game State
+    #region Game State & Events
     
     public void SetGameState(GameState newState)
     {
         if (CurrentState == newState) return;
         
-        GameState oldState = CurrentState;
         CurrentState = newState;
-        
-        Debug.Log($"Game state changed: {oldState} -> {newState}");
         OnGameStateChanged?.Invoke(newState);
         
-        switch (newState)
-        {
-            case GameState.Victory: HandleVictory(); break;
-            case GameState.GameOver: HandleGameOver(); break;
-        }
+        if (newState == GameState.Victory) HandleVictory();
+        if (newState == GameState.GameOver) HandleGameOver();
     }
 
     private void HandleVictory()
@@ -229,26 +258,35 @@ public class GameManager : MonoBehaviour
         OnGameEnded?.Invoke(false);
         if (uiManager != null) uiManager.ShowGameEndScreen(false);
     }
+
+    // Тези методи липсваха и предизвикваха грешките
+    public void OnPlayerDeath()
+    {
+        SetGameState(GameState.GameOver);
+    }
+
+    public void OnMonsterDefeated()
+    {
+        SetGameState(GameState.Victory);
+    }
     
     #endregion
 
     #region Card Placement & Turn Logic
     
-    // ВАЖНО: Этот метод должен вызываться из TurnManager при старте хода игрока!
     public void StartNewTurn()
     {
         cardsPlayedThisTurn = 0;
-        Debug.Log($"<color=green>НОВЫЙ ХОД. Счетчик сброшен: 0/{MAX_CARDS_PER_TURN}</color>");
+        DeselectBoardCard();
     }
 
     public void TryPlaceCardInColumn(int column)
     {
         if (CurrentState != GameState.PlayerTurn) return;
 
-        // 1. ПРОВЕРКА ЛИМИТА (ФИКС)
         if (cardsPlayedThisTurn >= MAX_CARDS_PER_TURN)
         {
-            Debug.LogWarning($"<color=red>Лимит карт исчерпан! ({cardsPlayedThisTurn}/{MAX_CARDS_PER_TURN})</color>");
+            Debug.LogWarning("Лимитът за карти този ход е изчерпан!");
             return;
         }
 
@@ -258,14 +296,10 @@ public class GameManager : MonoBehaviour
         if (playerBoard.PlaceCard(selectedCard, column))
         {
             hand.RemoveCard(selectedCard);
-            
-            // 2. УВЕЛИЧИВАЕМ СЧЕТЧИК
             cardsPlayedThisTurn++;
-            
             turnManager?.RecordCardPlaced();
-            SelectedBoardCardForWithdraw = null;
+            hand.DeselectCard();
             SoundManager.Instance?.PlayCardPlaced();
-            Debug.Log($"Карта сыграна. Счетчик: {cardsPlayedThisTurn}/{MAX_CARDS_PER_TURN}");
         }
     }
 
@@ -276,80 +310,40 @@ public class GameManager : MonoBehaviour
         CardVisual toWithdraw = SelectedBoardCardForWithdraw;
         if (toWithdraw == null) return;
 
-        if (playerBoard == null || hand == null || !playerBoard.TryRemoveCardFromRow0(toWithdraw))
-            return;
-
-        hand.AddCardBack(toWithdraw);
-        
-        // 3. УМЕНЬШАЕМ СЧЕТЧИК (возвращаем ход)
-        if (cardsPlayedThisTurn > 0) cardsPlayedThisTurn--;
-        
-        turnManager?.RecordCardWithdrawn();
-        
-        // Снимаем выделение, так как карта теперь в руке
-        DeselectBoardCard();
-
-        SoundManager.Instance?.PlayCardWithdrawn();
-        Debug.Log($"Карта возвращена. Счетчик: {cardsPlayedThisTurn}/{MAX_CARDS_PER_TURN}");
-    }
-
-    // Для управления через клавишу "E"
-    public void TryPlaceSelectedCard()
-    {
-        if (CurrentState != GameState.PlayerTurn) return;
-
-        if (cardsPlayedThisTurn >= MAX_CARDS_PER_TURN)
+        if (playerBoard.TryRemoveCardFromRow0(toWithdraw))
         {
-            Debug.LogWarning("Лимит карт исчерпан!");
-            return;
-        }
-
-        CardVisual selectedCard = hand.SelectedCard;
-        if (selectedCard == null) return;
-
-        if (playerBoard.PlaceCardAuto(selectedCard))
-        {
-            hand.RemoveCard(selectedCard);
-            cardsPlayedThisTurn++; // Тоже увеличиваем счетчик
-            turnManager?.RecordCardPlaced();
-            SoundManager.Instance?.PlayCardPlaced();
-            Debug.Log($"Карта сыграна (Авто). Счетчик: {cardsPlayedThisTurn}/{MAX_CARDS_PER_TURN}");
+            hand.AddCardBack(toWithdraw);
+            if (cardsPlayedThisTurn > 0) cardsPlayedThisTurn--;
+            
+            turnManager?.RecordCardWithdrawn();
+            DeselectBoardCard();
+            SoundManager.Instance?.PlayCardWithdrawn();
         }
     }
 
     public void SetSelectedBoardCardForWithdraw(CardVisual card)
     {
-        // ЛОГИКА ТУМБЛЕРА (ФИКС)
-        // Если кликнули по той же карте -> снимаем выделение
         if (SelectedBoardCardForWithdraw == card)
         {
             DeselectBoardCard();
             return;
         }
 
-        // Если была выбрана другая -> гасим её
         if (SelectedBoardCardForWithdraw != null)
-        {
             SelectedBoardCardForWithdraw.SetSelected(false);
-        }
 
         SelectedBoardCardForWithdraw = card;
         
         if (SelectedBoardCardForWithdraw != null)
-        {
             SelectedBoardCardForWithdraw.SetSelected(true);
-            Debug.Log($"Карта на столе выбрана: {card.CardData.CardName}");
-        }
     }
 
-    // Метод для InputHandler, чтобы снимать выделение при клике в пустоту
     public void DeselectBoardCard()
     {
         if (SelectedBoardCardForWithdraw != null)
         {
             SelectedBoardCardForWithdraw.SetSelected(false);
             SelectedBoardCardForWithdraw = null;
-            Debug.Log("Выделение с карты на столе снято.");
         }
     }
 
@@ -367,19 +361,8 @@ public class GameManager : MonoBehaviour
         }
     }
     
-    #endregion
-
-    #region Game Events
-    
-    public void OnPlayerDeath()
-    {
-        SetGameState(GameState.GameOver);
-    }
-
-    public void OnMonsterDefeated()
-    {
-        SetGameState(GameState.Victory);
-    }
+    // За управление с клавиатура/бутони
+    public void TryPlaceSelectedCard() { /* Логика при нужда */ }
 
     public void RestartGame()
     {

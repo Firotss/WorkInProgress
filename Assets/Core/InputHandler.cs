@@ -3,16 +3,14 @@ using UnityEngine;
 public class InputHandler : MonoBehaviour
 {
     [Header("Settings")]
-    [SerializeField] private LayerMask cardLayerMask = -1;
-    [SerializeField] private LayerMask boardLayerMask = -1;
-    [SerializeField] private float dragHeightOffset = 1.0f; // Height to lift card during drag
+    [SerializeField] private LayerMask cardLayerMask; // Увери се, че не е -1 в Инспектора!
+    [SerializeField] private LayerMask boardLayerMask; 
+    [SerializeField] private float dragHeightOffset = 1.0f;
 
     private Camera mainCamera;
-    
-    // Drag & Drop Variables
     private CardVisual draggingCard = null;
     private Vector3 startDragPosition;
-    private Plane dragPlane; // Plane for dragging the card
+    private Plane dragPlane;
     private bool isDragging = false;
 
     private void Start()
@@ -22,123 +20,87 @@ public class InputHandler : MonoBehaviour
 
     private void Update()
     {
-        // 1. Mouse Down (Start Drag or Select Card on Board)
-        if (Input.GetMouseButtonDown(0))
-        {
-            HandleMouseDown();
-        }
-
-        // 2. Mouse Drag (Move Card)
-        if (isDragging && draggingCard != null)
-        {
-            HandleMouseDrag();
-        }
-
-        // 3. Mouse Up (Attempt to Play Card)
-        if (Input.GetMouseButtonUp(0))
-        {
-            HandleMouseUp();
-        }
-
+        if (Input.GetMouseButtonDown(0)) HandleMouseDown();
+        if (isDragging && draggingCard != null) HandleMouseDrag();
+        if (Input.GetMouseButtonUp(0)) HandleMouseUp();
+        
         HandleKeyboardInput();
     }
 
     private void HandleMouseDown()
     {
-        if (mainCamera == null) mainCamera = Camera.main;
-
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
 
-        if (Physics.Raycast(ray, out hit, 100f))
+        if (Physics.Raycast(ray, out hit, 100f)) // Тук може да добавиш cardLayerMask, ако е настроен
         {
             CardVisual card = hit.collider.GetComponent<CardVisual>();
 
-            // --- ВАРИАНТ 1: Кликнули по КАРТЕ ---
             if (card != null)
             {
-                // А. КАРТА НА СТОЛЕ (Возврат в руку)
+                // 1. КАРТА НА МАСАТА
                 if (card.IsOnBoard)
                 {
-                    if (GameManager.Instance != null)
+                    if (GameManager.Instance.IsCardOnPlayerRow0(card))
                     {
-                        // Проверяем, наш ли это ряд (нельзя забирать карты врага или те, что уже уехали вперед)
-                        if (GameManager.Instance.IsCardOnPlayerRow0(card))
+                        // ЛОГИКА: Първи клик = Избор, Втори клик = Прибиране
+                        if (GameManager.Instance.SelectedBoardCard == card)
                         {
-                            GameManager.Instance.SetSelectedBoardCardForWithdraw(card); // Выбрали
-                            GameManager.Instance.TryWithdrawCard(); // ЗАБРАЛИ
+                            GameManager.Instance.TryWithdrawCard(); // Втори клик
+                        }
+                        else
+                        {
+                            GameManager.Instance.SetSelectedBoardCardForWithdraw(card); // Първи клик
                         }
                     }
-                    return; // Выходим, чтобы не сработала логика драг-н-дропа
+                    return;
                 }
 
-                // Б. КАРТА В РУКЕ (Начинаем перетаскивать)
-                if (GameManager.Instance != null && GameManager.Instance.PlayerHand != null)
+                // 2. КАРТА В РЪКАТА (Започваме влачене)
+                if (GameManager.Instance.PlayerHand != null && !card.IsOnBoard)
                 {
                     GameManager.Instance.PlayerHand.SelectCard(card);
-
+                    
                     draggingCard = card;
                     startDragPosition = card.transform.position;
                     isDragging = true;
-                    dragPlane = new Plane(Vector3.up, new Vector3(0, card.transform.position.y + dragHeightOffset, 0));
+                    dragPlane = new Plane(Vector3.up, new Vector3(0, card.transform.position.y, 0));
                     
                     Collider col = draggingCard.GetComponent<Collider>();
                     if (col) col.enabled = false;
                 }
             }
-            // --- ВАРИАНТ 2: Кликнули мимо карты ---
             else
             {
+                // Кликнато е нещо, което не е карта (напр. масата) - махаме селекцията
                 DeselectAll();
             }
         }
-        // --- ВАРИАНТ 3: Кликнули в пустоту ---
         else
         {
+            // Кликнато е в празно пространство
             DeselectAll();
         }
     }
-    // Helper method to clear all selections
+
     private void DeselectAll()
     {
-        // Проверка на null обязательна
-        if (GameManager.Instance != null)
-        {
-            bool wasSelected = false;
-
-            // 1. Снимаем выделение в РУКЕ
-            if (GameManager.Instance.PlayerHand != null)
-            {
-                if (GameManager.Instance.PlayerHand.SelectedCard != null)
-                {
-                    GameManager.Instance.PlayerHand.DeselectCard();
-                    wasSelected = true;
-                }
-            }
-                
-            // 2. Снимаем выделение на СТОЛЕ
-            if (GameManager.Instance.SelectedBoardCard != null) // Используем свойство из GameManager
-            {
-                GameManager.Instance.DeselectBoardCard();
-                wasSelected = true;
-            }
-
-            if (wasSelected) Debug.Log("--- DeselectAll сработал: выделение снято ---");
-        }
+        if (GameManager.Instance == null) return;
+        
+        GameManager.Instance.DeselectBoardCard();
+        // За ръката: Може да решим да не махаме селекцията веднага, за да е по-удобно
+        // но ако искаш пълен деселект:
+        // GameManager.Instance.PlayerHand.DeselectCard();
     }
 
     private void HandleMouseDrag()
     {
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        float enter = 0.0f;
-
-        // Intersect mouse ray with the drag plane
+        float enter;
         if (dragPlane.Raycast(ray, out enter))
         {
-            // Get point on plane
             Vector3 hitPoint = ray.GetPoint(enter);
-            
-            // Move card to this point
+            hitPoint.y = startDragPosition.y + 0.5f; // Леко повдигаме картата
             draggingCard.transform.position = hitPoint;
         }
     }
@@ -147,94 +109,43 @@ public class InputHandler : MonoBehaviour
     {
         if (!isDragging || draggingCard == null) return;
 
-        // Re-enable collider
         Collider col = draggingCard.GetComponent<Collider>();
         if (col) col.enabled = true;
 
         bool cardPlaced = false;
-
-        // Raycast down to find the board
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
 
-        // Look for Board using layer mask
+        // Търсим масата под мишката
         if (Physics.Raycast(ray, out hit, 100f, boardLayerMask)) 
         {
-            if (GameManager.Instance != null)
+            if (GameManager.Instance != null && GameManager.Instance.Board != null)
             {
-                BoardManager board = GameManager.Instance.Board;
-                if (board != null)
-                {
-                    int column = board.GetColumnFromWorldPosition(hit.point);
-                    
-                    // Try to place the card. 
-                    // GameManager checks logic (is turn valid? is slot free? card limit reached?)
-                    GameManager.Instance.TryPlaceCardInColumn(column);
-                    
-                    // Check if placement was successful by checking card state
-                    if (draggingCard.IsOnBoard) 
-                    {
-                        cardPlaced = true;
-                    }
-                }
+                int column = GameManager.Instance.Board.GetColumnFromWorldPosition(hit.point);
+                GameManager.Instance.TryPlaceCardInColumn(column);
+                
+                // Проверяваме дали картата е успешно поставена (IsOnBoard се задава в BoardManager)
+                if (draggingCard.IsOnBoard) cardPlaced = true;
             }
         }
 
-        // If card was NOT placed (dragged off board, invalid move, etc.)
         if (!cardPlaced)
         {
-            // Return card to start position
+            // Връщаме картата на мястото ѝ в ръката
             draggingCard.transform.position = startDragPosition;
-            
-            // Optional: You might want to keep it selected or deselect it here depending on preference.
-            // keeping it selected is usually better UX so they can try again or see info.
+            if (GameManager.Instance?.PlayerHand != null)
+            {
+                GameManager.Instance.PlayerHand.ArrangeCards(); // Подреждаме ръката отново
+            }
         }
 
-        // Reset variables
         draggingCard = null;
         isDragging = false;
     }
-
+    
     private void HandleKeyboardInput()
     {
-        if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
-        {
-            if (GameManager.Instance != null)
-                GameManager.Instance.OnEndTurnClicked();
-        }
-
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            if (GameManager.Instance != null)
-                GameManager.Instance.TryPlaceSelectedCard();
-        }
-
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            if (GameManager.Instance != null &&
-                (GameManager.Instance.CurrentState == GameState.Victory ||
-                 GameManager.Instance.CurrentState == GameState.GameOver))
-            {
-                GameManager.Instance.RestartGame();
-            }
-        }
-
-        for (int i = 0; i < 5; i++)
-        {
-            if (Input.GetKeyDown(KeyCode.Alpha1 + i))
-                SelectCardByIndex(i);
-        }
-    }
-
-    private void SelectCardByIndex(int index)
-    {
-        if (GameManager.Instance == null) return;
-
-        Hand hand = GameManager.Instance.PlayerHand;
-        if (hand == null) return;
-
-        var cards = hand.GetCardsInHand();
-        if (index >= 0 && index < cards.Count)
-            hand.SelectCard(cards[index]);
+        if (Input.GetKeyDown(KeyCode.Space))
+             GameManager.Instance?.OnEndTurnClicked();
     }
 }

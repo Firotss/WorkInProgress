@@ -1,264 +1,158 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System;
 
 public class Hand : MonoBehaviour
 {
-    [Header("Hand Settings")]
-    [SerializeField] private int baseMaxHandSize = 5;
-    [SerializeField] private int initialDrawCount = 6;
-    [SerializeField] private int drawPerTurn = 3;
-    [SerializeField] private float cardSpacing = 1.2f;
-    [SerializeField] private Vector3 handPosition = new Vector3(0, 0.2f, -6f);
-    
+    [Header("Settings")]
+    [SerializeField] private float cardSpacing = 2.0f;
+    [SerializeField] private float moveSpeed = 10f;
+    [SerializeField] private int maxHandSize = 5; // Максимален брой карти
+
     [Header("References")]
     [SerializeField] private GameObject cardPrefab;
-    [SerializeField] private Deck deck;
-    [SerializeField] private BoardManager playerBoard;
+    [SerializeField] private Transform handCenter;
+
+    private List<CardVisual> cards = new List<CardVisual>();
+    private Deck currentDeck;
+    private BoardManager playerBoard;
     
-    private List<CardVisual> cardsInHand;
     public CardVisual SelectedCard { get; private set; }
-    public int CardCount => cardsInHand?.Count ?? 0;
-    public int MaxHandSize => CountMaxHandCards();
-    public int DrawPerTurn => drawPerTurn;
-    public event Action<CardVisual> OnCardSelected;
-    public event Action<int> OnHandUpdated;
 
-    private void Awake()
+    // --- Инициализация ---
+
+    public void SetDeck(Deck deck)
     {
-        cardsInHand = new List<CardVisual>();
+        currentDeck = deck;
     }
 
-    public void SetDeck(Deck deckRef) { deck = deckRef; }
-    public void SetPlayerBoard(BoardManager board) { playerBoard = board; }
-
-    public int CountMaxHandCards()
+    public void SetPlayerBoard(BoardManager board)
     {
-        int max = baseMaxHandSize;
-        if (playerBoard != null)
-        {
-            int greenBonus = playerBoard.GetCountOfCardsWithAbility("max hand increase");
-            if (playerBoard.HasRow0ColorCombo("green"))
-                greenBonus *= 2;
-            max += greenBonus;
-        }
-        return max;
+        playerBoard = board;
     }
 
-    public void FillCards()
-    {
-        int maxHandCards = CountMaxHandCards();
-        while (cardsInHand.Count < maxHandCards)
-        {
-            Card newCard = deck != null ? deck.DrawCard() : null;
-            if (newCard == null)
-                break;
-            CardVisual cardVisual = CreateCardVisual(newCard);
-            cardsInHand.Add(cardVisual);
-            Debug.Log($"[ADD] Card added to hand: {newCard.CardName}. (Hand size: {cardsInHand.Count}/{maxHandCards})");
-        }
-        ArrangeCards();
-        OnHandUpdated?.Invoke(CardCount);
-    }
+    // --- Основни методи (Draw / Remove) ---
 
     public void DrawInitialCards()
     {
-        FillCards();
+        DrawCardsUntilFull();
     }
 
-    public void DrawTurnCards()
+    // Този метод липсваше и предизвикваше грешката
+    public void DrawCardsUntilFull()
     {
-        DrawCards(drawPerTurn);
-    }
+        if (currentDeck == null) return;
 
-    public void DrawCards(int count)
-    {
-        int maxHand = CountMaxHandCards();
-        int cardsToDraw = Mathf.Min(count, maxHand - cardsInHand.Count);
-
-        for (int i = 0; i < cardsToDraw; i++)
+        int cardsNeeded = maxHandSize - cards.Count;
+        for (int i = 0; i < cardsNeeded; i++)
         {
-            DrawCard();
-        }
-
-        ArrangeCards();
-        OnHandUpdated?.Invoke(CardCount);
-    }
-
-    public void DrawToFull()
-    {
-        FillCards();
-    }
-
-    public bool DrawCard()
-    {
-        if (cardsInHand.Count >= CountMaxHandCards())
-        {
-            Debug.LogWarning("Hand is full!");
-            return false;
-        }
-        
-        if (deck == null)
-        {
-            Debug.LogError("No deck assigned to hand!");
-            return false;
-        }
-        
-        Card cardData = deck.DrawCard();
-        if (cardData == null)
-        {
-            return false;
-        }
-        
-        CardVisual cardVisual = CreateCardVisual(cardData);
-        cardsInHand.Add(cardVisual);
-        
-        return true;
-    }
-
-    private CardVisual CreateCardVisual(Card cardData)
-    {
-        GameObject cardObj;
-        
-        if (cardPrefab != null)
-        {
-            cardObj = Instantiate(cardPrefab, transform);
-        }
-        else
-        {
-            cardObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cardObj.transform.parent = transform;
-            cardObj.transform.localScale = new Vector3(1f, 0.1f, 1.4f);
-        }
-        
-        CardVisual cardVisual = cardObj.GetComponent<CardVisual>();
-        if (cardVisual == null)
-        {
-            cardVisual = cardObj.AddComponent<CardVisual>();
-        }
-        
-        cardVisual.Initialize(cardData, this);
-        
-        return cardVisual;
-    }
-
-    public void ArrangeCards()
-    {
-        if (cardsInHand.Count == 0) return;
-        
-        float totalWidth = (cardsInHand.Count - 1) * cardSpacing;
-        float startX = -totalWidth / 2f;
-        
-        // Use the Hand object's position as base
-        Vector3 basePosition = transform.position;
-        
-        for (int i = 0; i < cardsInHand.Count; i++)
-        {
-            if (cardsInHand[i] == null) continue;
-            
-            Vector3 cardPosition = basePosition;
-            cardPosition.x = startX + (i * cardSpacing);
-            cardPosition.y = 0.2f; // Slightly above ground
-            
-            // Keep selected card raised
-            if (cardsInHand[i] == SelectedCard && SelectedCard != null)
+            Card cardData = currentDeck.DrawCard();
+            if (cardData != null)
             {
-                cardPosition.y += 0.5f;
+                CreateCardVisual(cardData);
             }
-            
-            cardsInHand[i].transform.position = cardPosition;
         }
+        ArrangeCards();
     }
 
-    public void SelectCard(CardVisual card)
+    private void CreateCardVisual(Card cardData)
     {
-        // --- ИЗМЕНЕНИЕ: УБИРАЕМ ЛОГИКУ ДЕСЕЛЕКТА ПРИ ПОВТОРНОМ КЛИКЕ ---
-        // Если мы кликаем по уже выбранной карте, мы хотим продолжить её держать/тащить,
-        // а не сбрасывать.
-        if (SelectedCard == card)
-        {
-            // Можно просто выйти, ничего не меняя, чтобы не пересчитывать позицию лишний раз
-            return; 
-        }
-        // ---------------------------------------------------------------
+        if (cardPrefab == null) return;
 
-        // Снимаем выделение с предыдущей карты (если была другая)
-        if (SelectedCard != null)
-        {
-            SelectedCard.SetSelected(false);
-        }
-
-        // Выбираем новую
-        SelectedCard = card;
-        SelectedCard.SetSelected(true);
+        GameObject cardObj = Instantiate(cardPrefab, handCenter.position, Quaternion.identity, transform);
+        CardVisual visual = cardObj.GetComponent<CardVisual>();
         
-        ArrangeCards(); // Пересчитываем позицию (поднимаем карту)
-        
-        OnCardSelected?.Invoke(card);
-        Debug.Log($"Selected card: {SelectedCard.CardData.CardName}");
-    }
-
-    // Внутри скрипта Hand.cs
-
-    public void DeselectCard()
-    {
-        if (SelectedCard != null)
+        if (visual != null)
         {
-            SelectedCard.SetSelected(false); // Визуально выключаем подсветку
-            
-            // Возвращаем карту на место (если она была приподнята)
-            // Если у вас есть метод ArrangeCards(), вызовите его
-            // ArrangeCards(); 
-            
-            SelectedCard = null; // Обнуляем ссылку
+            visual.Initialize(cardData, this);
+            cards.Add(visual);
         }
     }
 
     public void RemoveCard(CardVisual card)
     {
-        if (cardsInHand.Contains(card))
+        if (cards.Contains(card))
         {
-            cardsInHand.Remove(card);
-
-            if (SelectedCard == card)
-            {
-                SelectedCard = null;
-            }
-
+            cards.Remove(card);
             ArrangeCards();
-            OnHandUpdated?.Invoke(CardCount);
-            Debug.Log($"Card removed from hand. Cards remaining: {CardCount}");
         }
     }
 
     public void AddCardBack(CardVisual card)
     {
-        if (card == null) return;
-        if (cardsInHand.Contains(card)) return;
-        card.ReturnToHand(this);
-        cardsInHand.Add(card);
-        ArrangeCards();
-        OnHandUpdated?.Invoke(CardCount);
-        Debug.Log($"Card returned to hand: {card.CardData.CardName}. Hand size: {CardCount}");
+        if (!cards.Contains(card))
+        {
+            card.transform.SetParent(transform);
+            card.IsOnBoard = false; // Важно: маркираме, че вече не е на масата
+            cards.Add(card);
+            ArrangeCards();
+        }
     }
 
     public void ClearHand()
     {
-        foreach (CardVisual card in cardsInHand)
+        foreach (var card in cards)
         {
-            if (card != null)
-            {
-                Destroy(card.gameObject);
-            }
+            if (card != null) Destroy(card.gameObject);
         }
-        
-        cardsInHand.Clear();
-        SelectedCard = null;
-        OnHandUpdated?.Invoke(0);
+        cards.Clear();
     }
 
-    public List<CardVisual> GetCardsInHand()
+    // --- Визуализация и Подредба ---
+
+    // Този метод липсваше (или се наричаше по друг начин)
+    public void RefreshHandVisuals()
     {
-        return new List<CardVisual>(cardsInHand);
+        ArrangeCards();
+    }
+
+    public void ArrangeCards()
+    {
+        if (cards.Count == 0) return;
+
+        float totalWidth = (cards.Count - 1) * cardSpacing;
+        float startX = -totalWidth / 2f;
+
+        for (int i = 0; i < cards.Count; i++)
+        {
+            if (cards[i] == null) continue;
+
+            Vector3 targetPos = handCenter.position + new Vector3(startX + (i * cardSpacing), 0, 0);
+            
+            // Ако картата е избрана, я вдигаме леко нагоре
+            if (cards[i] == SelectedCard)
+            {
+                targetPos += Vector3.up * 0.5f;
+            }
+
+            cards[i].MoveTo(targetPos, moveSpeed);
+            cards[i].transform.rotation = Quaternion.identity; // Изправяме картата
+        }
+    }
+
+    // --- Селекция ---
+
+    public void SelectCard(CardVisual card)
+    {
+        if (SelectedCard != null && SelectedCard != card)
+        {
+            SelectedCard.SetSelected(false);
+        }
+
+        SelectedCard = card;
+        if (SelectedCard != null)
+        {
+            SelectedCard.SetSelected(true);
+        }
+        ArrangeCards();
+    }
+
+    public void DeselectCard()
+    {
+        if (SelectedCard != null)
+        {
+            SelectedCard.SetSelected(false);
+            SelectedCard = null;
+            ArrangeCards();
+        }
     }
 }
