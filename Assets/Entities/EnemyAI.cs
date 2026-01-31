@@ -9,11 +9,11 @@ public class EnemyAI : MonoBehaviour
 {
     [Header("AI Settings")]
     [SerializeField] private int cardsPerTurn = 3;
-    
+
     [Header("References")]
     [SerializeField] private BoardManager enemyBoard;
     [SerializeField] private Deck enemyDeck;
-    
+
     /// <summary>
     /// Reference to the enemy's deck.
     /// </summary>
@@ -38,53 +38,56 @@ public class EnemyAI : MonoBehaviour
             Debug.LogWarning("EnemyAI: Missing board or deck reference!");
             return;
         }
-        
-        int cardsToPlay = Mathf.Min(cardsPerTurn, enemyBoard.GetEmptyPlacementSlotCount());
-        
-        Debug.Log($"Enemy playing {cardsToPlay} cards...");
-        
-        for (int i = 0; i < cardsToPlay; i++)
+
+        int toPlay = Mathf.Min(cardsPerTurn, enemyBoard.GetEmptyPlacementSlotCount());
+        Debug.Log($"Enemy playing {toPlay} cards (random columns)...");
+
+        for (int i = 0; i < toPlay; i++)
         {
-            PlayRandomCard();
+            PlayRandomCardInRandomColumn();
         }
     }
 
-    /// <summary>
-    /// Plays a single random card on an empty slot.
-    /// </summary>
-    private void PlayRandomCard()
+    private void PlayRandomCardInRandomColumn()
     {
-        // Draw a card
         Card cardData = enemyDeck.DrawCard();
         if (cardData == null)
+            return;
+
+        int col = GetRandomEmptyColumn();
+        if (col < 0)
         {
-            Debug.Log("Enemy deck is empty!");
+            enemyDeck.AddToDiscard(cardData);
             return;
         }
-        
-        // Find empty slot
-        int emptySlots = enemyBoard.GetEmptyPlacementSlotCount();
-        if (emptySlots == 0)
-        {
-            Debug.Log("No empty slots for enemy card!");
-            return;
-        }
-        
+
         // Create card visual
         GameObject cardObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
         cardObj.transform.localScale = new Vector3(1f, 0.1f, 1.4f);
-        
         CardVisual cardVisual = cardObj.AddComponent<CardVisual>();
         cardVisual.Initialize(cardData, null);
-        
-        // Place on board
-        if (enemyBoard.PlaceCardAuto(cardVisual))
+
+        if (enemyBoard.PlaceCard(cardVisual, col))
         {
-            Debug.Log($"Enemy played: {cardData.CardName}");
+            Debug.Log($"Enemy played: {cardData.CardName} in column {col}");
         }
         else
         {
             Destroy(cardObj);
         }
+    }
+
+    private int GetRandomEmptyColumn()
+    {
+        var empty = new System.Collections.Generic.List<int>();
+        int cols = enemyBoard != null ? enemyBoard.ColumnCount : 5;
+        for (int c = 0; c < cols; c++)
+        {
+            if (enemyBoard.IsPlacementSlotEmpty(c))
+                empty.Add(c);
+        }
+        if (empty.Count == 0)
+            return -1;
+        return empty[UnityEngine.Random.Range(0, empty.Count)];
     }
 }

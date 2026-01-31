@@ -118,15 +118,14 @@ public class SceneSetupEditor : Editor
     private static void CreatePlayerBoard()
     {
         GameObject boardObj = new GameObject("PlayerBoard");
-        boardObj.transform.position = new Vector3(0, 0, -4f); // Row 0 here, rows go toward 0
+        boardObj.transform.position = new Vector3(0, 0, -4f);
         
         BoardManager board = boardObj.AddComponent<BoardManager>();
         
         SerializedObject so = new SerializedObject(board);
         so.FindProperty("isPlayerBoard").boolValue = true;
         so.ApplyModifiedProperties();
-        
-        // Create ground for player side
+
         GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
         ground.name = "PlayerGround";
         ground.transform.position = new Vector3(0, 0, -2.5f);
@@ -153,8 +152,7 @@ public class SceneSetupEditor : Editor
         SerializedObject so = new SerializedObject(board);
         so.FindProperty("isPlayerBoard").boolValue = false;
         so.ApplyModifiedProperties();
-        
-        // Create ground for enemy side
+
         GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
         ground.name = "EnemyGround";
         ground.transform.position = new Vector3(0, 0, 2.5f);
@@ -221,7 +219,7 @@ public class SceneSetupEditor : Editor
         canvasObj.AddComponent<UIManager>();
         
         GameObject keybindsObj = CreateText(canvasObj.transform, "KeybindsText",
-            "E - place card\nSpace - end turn\n1-5 - select card\nR - restart",
+            "E - place card\nQ - withdraw card\nSpace - end turn\n1-5 - select card\nR - restart",
             new Vector2(800, -180), 18);
         if (keybindsObj != null)
             keybindsObj.GetComponent<RectTransform>().sizeDelta = new Vector2(220, 100);
@@ -244,7 +242,27 @@ public class SceneSetupEditor : Editor
         // Hand/Deck info - bottom right
         CreateText(canvasObj.transform, "HandCountText", "Hand: 6/10", new Vector2(800, -450), 20);
         CreateText(canvasObj.transform, "DeckCountText", "Deck: 20", new Vector2(800, -480), 20);
-        
+        GameObject comboObj = CreateText(canvasObj.transform, "ComboStatusText", "",
+            new Vector2(20, 0), 18);
+        if (comboObj != null)
+        {
+            RectTransform comboRect = comboObj.GetComponent<RectTransform>();
+            if (comboRect != null)
+            {
+                comboRect.anchorMin = new Vector2(0, 0.5f);
+                comboRect.anchorMax = new Vector2(0, 0.5f);
+                comboRect.pivot = new Vector2(0, 0.5f);
+                comboRect.anchoredPosition = new Vector2(20, 0);
+                comboRect.sizeDelta = new Vector2(300, 240);
+            }
+            var tmp = comboObj.GetComponent<TMPro.TextMeshProUGUI>();
+            if (tmp != null)
+            {
+                tmp.alignment = TMPro.TextAlignmentOptions.TopLeft;
+                tmp.enableWordWrapping = true;
+            }
+        }
+
         CreateStartPanel(canvasObj.transform);
         CreateGameEndPanel(canvasObj.transform);
 

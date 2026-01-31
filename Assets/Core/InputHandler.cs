@@ -35,7 +35,14 @@ public class InputHandler : MonoBehaviour
         {
             CardVisual card = hit.collider.GetComponent<CardVisual>();
             if (card != null)
+            {
+                if (card.IsOnBoard && GameManager.Instance != null &&
+                    GameManager.Instance.IsCardOnPlayerRow0(card))
+                {
+                    GameManager.Instance.SetSelectedBoardCardForWithdraw(card);
+                }
                 return;
+            }
 
             if (GameManager.Instance != null &&
                 GameManager.Instance.CurrentState == GameState.PlayerTurn &&
@@ -55,11 +62,7 @@ public class InputHandler : MonoBehaviour
         if (board == null) return;
 
         int column = board.GetColumnFromWorldPosition(clickPosition);
-        CardVisual selectedCard = GameManager.Instance.PlayerHand.SelectedCard;
-        if (selectedCard != null && board.PlaceCard(selectedCard, column))
-        {
-            GameManager.Instance.PlayerHand.RemoveCard(selectedCard);
-        }
+        GameManager.Instance.TryPlaceCardInColumn(column);
     }
 
     private void HandleKeyboardInput()
@@ -74,6 +77,12 @@ public class InputHandler : MonoBehaviour
         {
             if (GameManager.Instance != null)
                 GameManager.Instance.TryPlaceSelectedCard();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            if (GameManager.Instance != null)
+                GameManager.Instance.TryWithdrawCard();
         }
 
         if (Input.GetKeyDown(KeyCode.R))

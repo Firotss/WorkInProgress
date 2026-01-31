@@ -88,6 +88,16 @@ public class CardVisual : MonoBehaviour
         }
     }
 
+    public void ReturnToHand(Hand hand)
+    {
+        if (hand == null) return;
+        IsOnBoard = false;
+        ownerHand = hand;
+        transform.SetParent(hand.transform);
+        if (cardRenderer != null)
+            cardRenderer.material.color = originalColor;
+    }
+
     private void OnMouseDown()
     {
         HandleClick();

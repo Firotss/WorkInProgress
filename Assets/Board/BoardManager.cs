@@ -23,6 +23,7 @@ public class BoardManager : MonoBehaviour
     private BoardSlot[,] slots;
     private GameObject[,] slotMarkers;
     public bool IsPlayerBoard => isPlayerBoard;
+    public int ColumnCount => columns;
     public event Action<Card> OnCardActivated;
     public event Action OnCardsAdvanced;
 
@@ -92,7 +93,7 @@ public class BoardManager : MonoBehaviour
                 Destroy(markerCollider);
             }
         }
-        
+
         // Set color based on row
         Renderer renderer = marker.GetComponent<Renderer>();
         if (renderer != null)
@@ -165,16 +166,114 @@ public class BoardManager : MonoBehaviour
                 return PlaceCard(card, col);
             }
         }
-        
+
         Debug.LogWarning("No empty slots in placement row!");
         return false;
     }
 
-    public List<Card> AdvanceCards(Player player, Monster monster)
+    public int GetCardRow(CardVisual card)
     {
-        List<Card> activatedCards = new List<Card>();
-        
-        // First, activate and remove cards in row 2 (activation row)
+        if (card == null || slots == null) return -1;
+        for (int row = 0; row < rows; row++)
+        {
+            for (int col = 0; col < columns; col++)
+            {
+                if (slots[row, col] != null && slots[row, col].PlacedCard == card)
+                    return row;
+            }
+        }
+        return -1;
+    }
+
+    public bool TryRemoveCardFromRow0(CardVisual card)
+    {
+        if (card == null || slots == null) return false;
+        for (int col = 0; col < columns; col++)
+        {
+            if (slots[0, col].PlacedCard == card)
+            {
+                slots[0, col].RemoveCard();
+                card.SetOnBoard(false);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public bool HasRow0ColorCombo(string color)
+    {
+        if (string.IsNullOrEmpty(color) || slots == null) return false;
+        for (int startCol = 0; startCol <= columns - 3; startCol++)
+        {
+            bool allMatch = true;
+            for (int c = startCol; c < startCol + 3; c++)
+            {
+                if (!slots[0, c].HasCard)
+                {
+                    allMatch = false;
+                    break;
+                }
+                Card card = slots[0, c].PlacedCard?.CardData;
+                if (card == null || card.Type == null ||
+                    !string.Equals(card.Type.color, color, StringComparison.OrdinalIgnoreCase))
+                {
+                    allMatch = false;
+                    break;
+                }
+            }
+            if (allMatch) return true;
+        }
+        return false;
+    }
+
+    public int GetTotalScoreByColor(string color)
+    {
+        if (string.IsNullOrEmpty(color) || slots == null) return 0;
+        int total = 0;
+        for (int row = 0; row < rows; row++)
+        {
+            for (int col = 0; col < columns; col++)
+            {
+                if (slots[row, col] != null && slots[row, col].HasCard)
+                {
+                    Card card = slots[row, col].PlacedCard?.CardData;
+                    if (card != null && card.Type != null &&
+                        string.Equals(card.Type.color, color, StringComparison.OrdinalIgnoreCase))
+                    {
+                        total += card.Score;
+                    }
+                }
+            }
+        }
+        return total;
+    }
+
+    public int GetCountOfCardsByColor(string color)
+    {
+        if (string.IsNullOrEmpty(color) || slots == null) return 0;
+        int count = 0;
+        for (int row = 0; row < rows; row++)
+        {
+            for (int col = 0; col < columns; col++)
+            {
+                if (slots[row, col] != null && slots[row, col].HasCard)
+                {
+                    Card card = slots[row, col].PlacedCard?.CardData;
+                    if (card != null && card.Type != null &&
+                        string.Equals(card.Type.color, color, StringComparison.OrdinalIgnoreCase))
+                    {
+                        count++;
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
+    public List<Card> AdvanceCards()
+    {
+        List<Card> discarded = new List<Card>();
+
         for (int col = 0; col < columns; col++)
         {
             BoardSlot activationSlot = slots[2, col];
@@ -182,38 +281,18 @@ public class BoardManager : MonoBehaviour
             {
                 CardVisual cardVisual = activationSlot.RemoveCard();
                 Card cardData = cardVisual.CardData;
-                
-                // Execute the card effect based on board owner
-                if (isPlayerBoard)
-                {
-                    // Player cards affect monster
-                    cardData.Execute(player, monster);
-                }
-                else
-                {
-                    // Enemy cards affect player (attack becomes damage to player)
-                    ExecuteEnemyCard(cardData, player);
-                }
-                
-                activatedCards.Add(cardData);
+                discarded.Add(cardData);
                 OnCardActivated?.Invoke(cardData);
-
                 if (deck != null)
-                {
                     deck.AddToDiscard(cardData);
-                }
-
                 Destroy(cardVisual.gameObject);
-                Debug.Log($"Card activated on {(isPlayerBoard ? "player" : "enemy")} board slot [2,{col}]");
             }
         }
-        
-        // Move cards from row 1 to row 2
+
         for (int col = 0; col < columns; col++)
         {
             BoardSlot sourceSlot = slots[1, col];
             BoardSlot targetSlot = slots[2, col];
-            
             if (sourceSlot.HasCard)
             {
                 CardVisual card = sourceSlot.RemoveCard();
@@ -221,13 +300,11 @@ public class BoardManager : MonoBehaviour
                 card.transform.position = targetSlot.WorldPosition + Vector3.up * 0.1f;
             }
         }
-        
-        // Move cards from row 0 to row 1
+
         for (int col = 0; col < columns; col++)
         {
             BoardSlot sourceSlot = slots[0, col];
             BoardSlot targetSlot = slots[1, col];
-            
             if (sourceSlot.HasCard)
             {
                 CardVisual card = sourceSlot.RemoveCard();
@@ -235,9 +312,9 @@ public class BoardManager : MonoBehaviour
                 card.transform.position = targetSlot.WorldPosition + Vector3.up * 0.1f;
             }
         }
-        
+
         OnCardsAdvanced?.Invoke();
-        return activatedCards;
+        return discarded;
     }
 
     private void ExecuteEnemyCard(Card card, Player player)
@@ -259,13 +336,9 @@ public class BoardManager : MonoBehaviour
         if (typeName == "spell")
         {
             if (card.GetCardAbility() == "heal")
-            {
-                // Enemy heal would heal enemy; not applied to player
                 Debug.Log($"Enemy spell (heal): {score}");
-            }
             return;
         }
-        // Fallback: treat as attack
         player.TakeDamage(score);
     }
 
@@ -305,15 +378,20 @@ public class BoardManager : MonoBehaviour
         return false;
     }
 
+    public bool IsPlacementSlotEmpty(int column)
+    {
+        if (column < 0 || column >= columns || slots == null)
+            return false;
+        return !slots[0, column].HasCard;
+    }
+
     public int GetEmptyPlacementSlotCount()
     {
         int count = 0;
         for (int col = 0; col < columns; col++)
         {
             if (!slots[0, col].HasCard)
-            {
                 count++;
-            }
         }
         return count;
     }

@@ -22,7 +22,10 @@ public class UIManager : MonoBehaviour
     [Header("Hand Info")]
     [SerializeField] private TextMeshProUGUI handCountText;
     [SerializeField] private TextMeshProUGUI deckCountText;
-    
+
+    [Header("Combo Status (Row 0)")]
+    [SerializeField] private TextMeshProUGUI comboStatusText;
+
     [Header("Start Screen")]
     [SerializeField] private GameObject startPanel;
     [SerializeField] private Button startButton;
@@ -109,6 +112,33 @@ public class UIManager : MonoBehaviour
             if (panel != null)
                 gameEndPanel = panel.gameObject;
         }
+        if (comboStatusText == null)
+        {
+            comboStatusText = FindTextByName("ComboStatusText");
+            if (comboStatusText == null)
+                comboStatusText = CreateComboStatusText();
+        }
+    }
+
+    private TextMeshProUGUI CreateComboStatusText()
+    {
+        GameObject go = new GameObject("ComboStatusText");
+        go.transform.SetParent(transform, false);
+        RectTransform rect = go.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0, 0.5f);
+        rect.anchorMax = new Vector2(0, 0.5f);
+        rect.pivot = new Vector2(0, 0.5f);
+        rect.anchoredPosition = new Vector2(20, 0);
+        rect.sizeDelta = new Vector2(300, 240);
+        TextMeshProUGUI tmp = go.AddComponent<TextMeshProUGUI>();
+        tmp.text = "Комбо (ред 0):\n—";
+        tmp.fontSize = 18;
+        tmp.color = Color.white;
+        tmp.alignment = TMPro.TextAlignmentOptions.TopLeft;
+        tmp.enableWordWrapping = true;
+        if (TMPro.TMP_Settings.defaultFontAsset != null)
+            tmp.font = TMPro.TMP_Settings.defaultFontAsset;
+        return tmp;
     }
 
     private TextMeshProUGUI FindTextByName(string name)
@@ -274,27 +304,79 @@ public class UIManager : MonoBehaviour
         }
         
         UpdateGameStateUI();
+        UpdateComboStatusText();
+    }
+
+    private void UpdateComboStatusText()
+    {
+        if (comboStatusText == null)
+        {
+            comboStatusText = FindTextByName("ComboStatusText");
+            if (comboStatusText == null)
+                comboStatusText = CreateComboStatusText();
+        }
+        if (GameManager.Instance == null || GameManager.Instance.PlayerBoard == null ||
+            GameManager.Instance.EnemyBoard == null)
+        {
+            comboStatusText.text = "Комбо (ред 0):\n3 червени → +100% дмг\n3 сини → -50% дмг\n3 зелени → бонус x2";
+            comboStatusText.gameObject.SetActive(true);
+            return;
+        }
+        var lines = new System.Collections.Generic.List<string>();
+        BoardManager playerBoard = GameManager.Instance.PlayerBoard;
+        BoardManager enemyBoard = GameManager.Instance.EnemyBoard;
+
+        if (playerBoard.HasRow0ColorCombo("red"))
+            lines.Add("3 червени на ред\n+100% демедж скор (ти)");
+        if (enemyBoard.HasRow0ColorCombo("red"))
+            lines.Add("3 червени на ред\n+100% демедж скор (враг)");
+        if (playerBoard.HasRow0ColorCombo("blue"))
+            lines.Add("3 сини на ред\n-50% получаван демедж (ти)");
+        if (enemyBoard.HasRow0ColorCombo("blue"))
+            lines.Add("3 сини на ред\n-50% получаван демедж (враг)");
+        if (playerBoard.HasRow0ColorCombo("green"))
+            lines.Add("3 зелени на ред\nбонус зелени x2");
+
+        string body = lines.Count > 0
+            ? string.Join("\n\n", lines)
+            : "3 червени → +100% дмг\n3 сини → -50% дмг\n3 зелени → бонус x2";
+        comboStatusText.text = "Комбо (ред 0):\n" + body;
+        comboStatusText.gameObject.SetActive(true);
     }
 
     private void UpdateGameStateUI()
     {
         if (gameStateText == null) return;
-        
+
         if (GameManager.Instance == null)
         {
             gameStateText.text = "Waiting...";
             return;
         }
-        
-        gameStateText.text = GameManager.Instance.CurrentState switch
+
+        switch (GameManager.Instance.CurrentState)
         {
-            GameState.PlayerTurn => "YOUR TURN - Click cards, then END TURN",
-            GameState.ProcessingTurn => "Processing...",
-            GameState.MonsterTurn => "Enemy Turn...",
-            GameState.Victory => "VICTORY!",
-            GameState.GameOver => "GAME OVER",
-            _ => "..."
-        };
+            case GameState.PlayerTurn:
+                int placed = turnManager != null ? turnManager.PlacementsThisTurn : 0;
+                int maxPlace = turnManager != null ? turnManager.MaxPlacementsPerTurn : 3;
+                gameStateText.text = $"YOUR TURN — {placed}/{maxPlace} cards";
+                break;
+            case GameState.ProcessingTurn:
+                gameStateText.text = "Resolving...";
+                break;
+            case GameState.MonsterTurn:
+                gameStateText.text = "Enemy turn";
+                break;
+            case GameState.Victory:
+                gameStateText.text = "VICTORY!";
+                break;
+            case GameState.GameOver:
+                gameStateText.text = "GAME OVER";
+                break;
+            default:
+                gameStateText.text = "...";
+                break;
+        }
     }
 
     private void OnEndTurnClicked()
@@ -384,6 +466,10 @@ public class UIManager : MonoBehaviour
     private void Update()
     {
         UpdatePlayerHealthUI();
+        if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.PlayerTurn)
+        {
+            UpdateGameStateUI();
+        }
         if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.NotStarted)
         {
             if (startPanel == null)
@@ -402,6 +488,13 @@ public class UIManager : MonoBehaviour
             }
             if (startPanel != null)
                 startPanel.SetActive(true);
+        }
+        else if (GameManager.Instance != null &&
+                 GameManager.Instance.CurrentState != GameState.NotStarted &&
+                 GameManager.Instance.CurrentState != GameState.Victory &&
+                 GameManager.Instance.CurrentState != GameState.GameOver)
+        {
+            UpdateComboStatusText();
         }
     }
 }

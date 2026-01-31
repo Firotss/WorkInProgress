@@ -207,7 +207,7 @@ public class GameSetup : MonoBehaviour
         canvasObj.AddComponent<UIManager>();
         
         GameObject keybindsObj = CreateText(canvasObj.transform, "KeybindsText",
-            "E - place card\nSpace - end turn\n1-5 - select card\nR - restart",
+            "E - place card\nQ - withdraw card\nSpace - end turn\n1-5 - select card\nR - restart",
             new Vector2(800, -180), 18);
         if (keybindsObj != null)
             keybindsObj.GetComponent<RectTransform>().sizeDelta = new Vector2(220, 100);
@@ -215,7 +215,6 @@ public class GameSetup : MonoBehaviour
         CreateButton(canvasObj.transform, "EndTurnButton", "END TURN",
             new Vector2(800, -300), new Vector2(200, 80));
 
-        // Texts
         CreateText(canvasObj.transform, "TurnText", "Turn: 1", new Vector2(-800, 480), 28);
         CreateText(canvasObj.transform, "RoundText", "Round: 1", new Vector2(-800, 440), 24);
         CreateText(canvasObj.transform, "GameStateText", "Your Turn", new Vector2(0, 480), 32);
@@ -224,7 +223,28 @@ public class GameSetup : MonoBehaviour
         CreateText(canvasObj.transform, "MonsterStageText", "Mask 1/3", new Vector2(0, 360), 20);
         CreateText(canvasObj.transform, "HandCountText", "Hand: 6/10", new Vector2(800, -450), 20);
         CreateText(canvasObj.transform, "DeckCountText", "Deck: 20", new Vector2(800, -480), 20);
-        
+
+        GameObject comboObj = CreateText(canvasObj.transform, "ComboStatusText", "",
+            new Vector2(20, 0), 18);
+        if (comboObj != null)
+        {
+            RectTransform comboRect = comboObj.GetComponent<RectTransform>();
+            if (comboRect != null)
+            {
+                comboRect.anchorMin = new Vector2(0, 0.5f);
+                comboRect.anchorMax = new Vector2(0, 0.5f);
+                comboRect.pivot = new Vector2(0, 0.5f);
+                comboRect.anchoredPosition = new Vector2(20, 0);
+                comboRect.sizeDelta = new Vector2(300, 240);
+            }
+            var tmp = comboObj.GetComponent<TextMeshProUGUI>();
+            if (tmp != null)
+            {
+                tmp.alignment = TMPro.TextAlignmentOptions.TopLeft;
+                tmp.enableWordWrapping = true;
+            }
+        }
+
         CreateStartPanel(canvasObj.transform);
         CreateGameEndPanel(canvasObj.transform);
 

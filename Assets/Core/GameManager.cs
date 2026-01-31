@@ -58,7 +58,9 @@ public class GameManager : MonoBehaviour
     public BoardManager EnemyBoard => enemyBoard;
     public Hand PlayerHand => hand;
     public EnemyAI EnemyAI => enemyAI;
-    
+
+    public CardVisual SelectedBoardCardForWithdraw { get; private set; }
+
     #endregion
 
     #region Events
@@ -271,6 +273,49 @@ public class GameManager : MonoBehaviour
 
     #region Card Placement
     
+    public void TryPlaceCardInColumn(int column)
+    {
+        if (CurrentState != GameState.PlayerTurn)
+            return;
+        if (turnManager != null && !turnManager.CanPlaceCard())
+            return;
+        CardVisual selectedCard = hand.SelectedCard;
+        if (selectedCard == null)
+            return;
+        if (playerBoard.PlaceCard(selectedCard, column))
+        {
+            hand.RemoveCard(selectedCard);
+            turnManager?.RecordCardPlaced();
+            SelectedBoardCardForWithdraw = null;
+            Debug.Log($"Card placed in column {column}: {selectedCard.CardData.CardName}");
+        }
+    }
+
+    public bool IsCardOnPlayerRow0(CardVisual card)
+    {
+        return playerBoard != null && card != null && playerBoard.GetCardRow(card) == 0;
+    }
+
+    public void SetSelectedBoardCardForWithdraw(CardVisual card)
+    {
+        SelectedBoardCardForWithdraw = card;
+    }
+
+    public void TryWithdrawCard()
+    {
+        if (CurrentState != GameState.PlayerTurn)
+            return;
+        CardVisual toWithdraw = SelectedBoardCardForWithdraw;
+        if (toWithdraw == null)
+            return;
+        if (playerBoard == null || hand == null || !playerBoard.TryRemoveCardFromRow0(toWithdraw))
+            return;
+        hand.AddCardBack(toWithdraw);
+        turnManager?.RecordCardWithdrawn();
+        SelectedBoardCardForWithdraw = null;
+        Debug.Log($"Card withdrawn to hand: {toWithdraw.CardData.CardName}");
+    }
+
     public void TryPlaceSelectedCard()
     {
         if (CurrentState != GameState.PlayerTurn)
@@ -278,18 +323,24 @@ public class GameManager : MonoBehaviour
             Debug.LogWarning("Cannot place cards - not player's turn!");
             return;
         }
-        
+
+        if (turnManager != null && !turnManager.CanPlaceCard())
+        {
+            Debug.LogWarning("Maximum 3 cards per turn!");
+            return;
+        }
+
         CardVisual selectedCard = hand.SelectedCard;
-        
         if (selectedCard == null)
         {
             Debug.LogWarning("No card selected!");
             return;
         }
-        
+
         if (playerBoard.PlaceCardAuto(selectedCard))
         {
             hand.RemoveCard(selectedCard);
+            turnManager?.RecordCardPlaced();
             Debug.Log($"Card placed on board: {selectedCard.CardData.CardName}");
         }
     }

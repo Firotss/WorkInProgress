@@ -37,7 +37,10 @@ public class Hand : MonoBehaviour
         int max = baseMaxHandSize;
         if (playerBoard != null)
         {
-            max += playerBoard.GetCountOfCardsWithAbility("max hand increase");
+            int greenBonus = playerBoard.GetCountOfCardsWithAbility("max hand increase");
+            if (playerBoard.HasRow0ColorCombo("green"))
+                greenBonus *= 2;
+            max += greenBonus;
         }
         return max;
     }
@@ -123,7 +126,6 @@ public class Hand : MonoBehaviour
         }
         else
         {
-            // Create a simple cube as card visual
             cardObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
             cardObj.transform.parent = transform;
             cardObj.transform.localScale = new Vector3(1f, 0.1f, 1.4f);
@@ -182,11 +184,7 @@ public class Hand : MonoBehaviour
         
         // Deselect previous card
         if (SelectedCard != null)
-        {
             SelectedCard.SetSelected(false);
-        }
-        
-        // Select new card
         SelectedCard = card;
         SelectedCard.SetSelected(true);
         ArrangeCards(); // Rearrange to raise the card
@@ -210,16 +208,27 @@ public class Hand : MonoBehaviour
         if (cardsInHand.Contains(card))
         {
             cardsInHand.Remove(card);
-            
+
             if (SelectedCard == card)
             {
                 SelectedCard = null;
             }
-            
+
             ArrangeCards();
             OnHandUpdated?.Invoke(CardCount);
             Debug.Log($"Card removed from hand. Cards remaining: {CardCount}");
         }
+    }
+
+    public void AddCardBack(CardVisual card)
+    {
+        if (card == null) return;
+        if (cardsInHand.Contains(card)) return;
+        card.ReturnToHand(this);
+        cardsInHand.Add(card);
+        ArrangeCards();
+        OnHandUpdated?.Invoke(CardCount);
+        Debug.Log($"Card returned to hand: {card.CardData.CardName}. Hand size: {CardCount}");
     }
 
     public void ClearHand()
