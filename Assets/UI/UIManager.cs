@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using System.Collections;
 
 public class UIManager : MonoBehaviour
 {
@@ -34,7 +35,10 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject gameEndPanel;
     [SerializeField] private TextMeshProUGUI gameEndText;
     [SerializeField] private TextMeshProUGUI gameEndSubtext;
-    
+
+    [Header("Dialogue System")]
+    [SerializeField] private DialogueManager dialogueManager;
+
     [Header("References")]
     [SerializeField] private Player player;
     [SerializeField] private Monster monster;
@@ -117,6 +121,13 @@ public class UIManager : MonoBehaviour
             comboStatusText = FindTextByName("ComboStatusText");
             if (comboStatusText == null)
                 comboStatusText = CreateComboStatusText();
+        }
+
+        if (dialogueManager == null)
+        {
+            dialogueManager = GetComponent<DialogueManager>();
+            if (dialogueManager == null)
+                dialogueManager = FindObjectOfType<DialogueManager>(true);
         }
     }
 
@@ -387,10 +398,55 @@ public class UIManager : MonoBehaviour
 
     private void OnStartClicked()
     {
+        StartCoroutine(ShowDialogueAfterPlayLoad());
+    }
+
+    /// <summary>
+    /// Hides start panel, waits for the "scene after play" to be ready, then shows the dialogue.
+    /// </summary>
+    private IEnumerator ShowDialogueAfterPlayLoad()
+    {
         if (startPanel != null)
             startPanel.SetActive(false);
+
+        if (dialogueManager == null)
+        {
+            dialogueManager = GetComponent<DialogueManager>();
+            if (dialogueManager == null)
+                dialogueManager = FindObjectOfType<DialogueManager>(true);
+            if (dialogueManager == null)
+                dialogueManager = DialogueManager.EnsureOnCanvas(transform);
+        }
+
+        if (dialogueManager == null)
+        {
+            Debug.LogWarning("UIManager: DialogueManager not found! Starting game directly.");
+            if (GameManager.Instance != null)
+                GameManager.Instance.StartGame();
+            yield break;
+        }
+
+        yield return null;
+
+        dialogueManager.OnDialogueCompleted += OnDialogueCompleted;
+        dialogueManager.StartDialogue();
+    }
+
+    private void OnDialogueCompleted()
+    {
+        if (dialogueManager != null)
+        {
+            dialogueManager.OnDialogueCompleted -= OnDialogueCompleted;
+        }
+
+        if (startPanel != null)
+            startPanel.SetActive(false);
+
         if (GameManager.Instance != null)
+        {
             GameManager.Instance.StartGame();
+            UpdateAllUI();
+        }
     }
 
     private void OnRestartClicked()

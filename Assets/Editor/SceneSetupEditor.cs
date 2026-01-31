@@ -261,8 +261,76 @@ public class SceneSetupEditor : Editor
 
         CreateStartPanel(canvasObj.transform);
         CreateGameEndPanel(canvasObj.transform);
+        CreateDialoguePanel(canvasObj.transform);
 
         Debug.Log("Created: UI Canvas");
+    }
+
+    private static void CreateDialoguePanel(Transform parent)
+    {
+        GameObject panel = new GameObject("DialoguePanel");
+        panel.transform.SetParent(parent, false);
+
+        RectTransform panelRect = panel.AddComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0.1f, 0.1f);
+        panelRect.anchorMax = new Vector2(0.9f, 0.35f);
+        panelRect.offsetMin = Vector2.zero;
+        panelRect.offsetMax = Vector2.zero;
+
+        UnityEngine.UI.Image panelBg = panel.AddComponent<UnityEngine.UI.Image>();
+        panelBg.color = new Color(0.05f, 0.05f, 0.1f, 0.95f);
+
+        UnityEngine.UI.Outline outline = panel.AddComponent<UnityEngine.UI.Outline>();
+        outline.effectColor = new Color(0.3f, 0.3f, 0.4f, 1f);
+        outline.effectDistance = new Vector2(3, 3);
+
+        GameObject nameObj = new GameObject("SpeakerNameText");
+        nameObj.transform.SetParent(panel.transform, false);
+        RectTransform nameRect = nameObj.AddComponent<RectTransform>();
+        nameRect.anchorMin = new Vector2(0, 1);
+        nameRect.anchorMax = new Vector2(0, 1);
+        nameRect.pivot = new Vector2(0, 1);
+        nameRect.anchoredPosition = new Vector2(20, 30);
+        nameRect.sizeDelta = new Vector2(400, 50);
+        TMPro.TextMeshProUGUI nameText = nameObj.AddComponent<TMPro.TextMeshProUGUI>();
+        nameText.text = "Speaker";
+        nameText.fontSize = 28;
+        nameText.fontStyle = TMPro.FontStyles.Bold;
+        nameText.color = new Color(0.4f, 0.7f, 1f);
+        nameText.alignment = TMPro.TextAlignmentOptions.Left;
+
+        GameObject dialogueObj = new GameObject("DialogueText");
+        dialogueObj.transform.SetParent(panel.transform, false);
+        RectTransform dialogueRect = dialogueObj.AddComponent<RectTransform>();
+        dialogueRect.anchorMin = new Vector2(0, 0);
+        dialogueRect.anchorMax = new Vector2(1, 1);
+        dialogueRect.offsetMin = new Vector2(30, 60);
+        dialogueRect.offsetMax = new Vector2(-30, -20);
+        TMPro.TextMeshProUGUI dialogueText = dialogueObj.AddComponent<TMPro.TextMeshProUGUI>();
+        dialogueText.text = "";
+        dialogueText.fontSize = 26;
+        dialogueText.color = Color.white;
+        dialogueText.alignment = TMPro.TextAlignmentOptions.TopLeft;
+        dialogueText.enableWordWrapping = true;
+
+        GameObject nextBtn = CreateButton(panel.transform, "DialogueNextButton", "Next", new Vector2(0, 0), new Vector2(140, 50));
+        if (nextBtn != null)
+        {
+            RectTransform btnRect = nextBtn.GetComponent<RectTransform>();
+            btnRect.anchorMin = new Vector2(1, 0);
+            btnRect.anchorMax = new Vector2(1, 0);
+            btnRect.pivot = new Vector2(1, 0);
+            btnRect.anchoredPosition = new Vector2(-20, 15);
+        }
+
+        DialogueManager dm = parent.GetComponent<DialogueManager>();
+        if (dm == null)
+            dm = parent.gameObject.AddComponent<DialogueManager>();
+        UnityEngine.UI.Button nextButton = nextBtn != null ? nextBtn.GetComponent<UnityEngine.UI.Button>() : null;
+        dm.SetReferences(panel, nameText, dialogueText, nextButton);
+
+        panel.SetActive(false);
+        Debug.Log("Created: Dialogue Panel");
     }
 
     private static void EnsureEventSystem()
