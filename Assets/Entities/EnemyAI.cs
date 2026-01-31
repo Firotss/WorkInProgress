@@ -69,6 +69,7 @@ public class EnemyAI : MonoBehaviour
 
         if (enemyBoard.PlaceCard(cardVisual, col))
         {
+            SoundManager.Instance?.PlayCardPlaced();
             Debug.Log($"Enemy played: {cardData.CardName} in column {col}");
         }
         else

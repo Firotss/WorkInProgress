@@ -84,6 +84,8 @@ public class GameManager : MonoBehaviour
         instance = this;
         applicationIsQuitting = false;
         CurrentState = GameState.NotStarted;
+        if (GetComponent<SoundManager>() == null)
+            gameObject.AddComponent<SoundManager>();
     }
 
     private void OnApplicationQuit()
@@ -287,6 +289,7 @@ public class GameManager : MonoBehaviour
             hand.RemoveCard(selectedCard);
             turnManager?.RecordCardPlaced();
             SelectedBoardCardForWithdraw = null;
+            SoundManager.Instance?.PlayCardPlaced();
             Debug.Log($"Card placed in column {column}: {selectedCard.CardData.CardName}");
         }
     }
@@ -313,6 +316,7 @@ public class GameManager : MonoBehaviour
         hand.AddCardBack(toWithdraw);
         turnManager?.RecordCardWithdrawn();
         SelectedBoardCardForWithdraw = null;
+        SoundManager.Instance?.PlayCardWithdrawn();
         Debug.Log($"Card withdrawn to hand: {toWithdraw.CardData.CardName}");
     }
 
@@ -341,6 +345,7 @@ public class GameManager : MonoBehaviour
         {
             hand.RemoveCard(selectedCard);
             turnManager?.RecordCardPlaced();
+            SoundManager.Instance?.PlayCardPlaced();
             Debug.Log($"Card placed on board: {selectedCard.CardData.CardName}");
         }
     }
@@ -348,7 +353,10 @@ public class GameManager : MonoBehaviour
     public void OnEndTurnClicked()
     {
         if (turnManager != null && CurrentState == GameState.PlayerTurn)
+        {
+            SoundManager.Instance?.PlayEndTurn();
             turnManager.EndTurn();
+        }
     }
     
     #endregion

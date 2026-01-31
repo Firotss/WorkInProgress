@@ -145,6 +145,8 @@ public class Deck : MonoBehaviour
         deck.AddRange(discardPile);
         discardPile.Clear();
         ShuffleDeck();
+        if (SoundManager.Instance != null)
+            SoundManager.Instance.PlayShuffle();
     }
 
     public void ResetDeck()
