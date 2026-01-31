@@ -13,7 +13,7 @@ public class BoardManager : MonoBehaviour
 
     [Header("Visual Settings")]
     [SerializeField] private GameObject slotMarkerPrefab;
-    [SerializeField] private Color placementRowColor = new Color(0.3f, 0.3f, 0.8f, 0.5f);
+    [SerializeField] private Color placementRowColor = new Color(0.3f, 0.3f, 0.8f, 1f);
     [SerializeField] private Color middleRowColor = new Color(0.5f, 0.5f, 0.5f, 0.3f);
     [SerializeField] private Color activationRowColor = new Color(0.8f, 0.3f, 0.3f, 0.5f);
 
