@@ -175,23 +175,27 @@ public class GameManager : MonoBehaviour
     {
         player.ResetPlayer();
         monster.ResetMonster();
-        
+
         hand.SetDeck(playerDeck);
         hand.SetPlayerBoard(playerBoard);
         playerDeck.ResetDeck();
         hand.ClearHand();
-        hand.DrawInitialCards(); 
+        hand.DrawInitialCards();
 
-        enemyDeck.ResetDeck();
+        if (enemyDeck != null)
+            enemyDeck.ResetDeck();
         playerBoard.SetDeck(playerDeck);
-        enemyBoard.SetDeck(enemyDeck);
-        enemyAI.Initialize(enemyBoard, enemyDeck);
+        if (enemyBoard != null)
+            enemyBoard.SetDeck(enemyDeck);
+        if (enemyAI != null)
+            enemyAI.Initialize(enemyBoard, enemyDeck);
         playerBoard.ClearBoard();
-        enemyBoard.ClearBoard();
-        
+        if (enemyBoard != null)
+            enemyBoard.ClearBoard();
+
         turnManager.Initialize(this, playerBoard, enemyBoard, player, monster, hand, enemyAI);
         player.Hand = hand;
-        
+
         Debug.Log("Game initialized successfully.");
     }
     

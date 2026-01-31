@@ -54,7 +54,7 @@ public class DialogueManager : MonoBehaviour
 
         dialogueLines.Add(new DialogueLine("Player", "What...What happened where am I and who are you", true));
         dialogueLines.Add(new DialogueLine("Masked Entity", "You will never know who I am or why you are here", false));
-        dialogueLines.Add(new DialogueLine("Player", "Stop hiding before that mask and tell me who you are or I will see it for myself", true));
+        dialogueLines.Add(new DialogueLine("Player", "Stop hiding behind that mask and tell me who you are or I will see it for myself", true));
         dialogueLines.Add(new DialogueLine("Masked Entity", "I would like to see you try", false));
     }
 
@@ -340,7 +340,7 @@ public class DialogueManager : MonoBehaviour
         nameRect.sizeDelta = new Vector2(400, 50);
         TextMeshProUGUI nameText = nameObj.AddComponent<TextMeshProUGUI>();
         nameText.text = "Speaker";
-        nameText.fontSize = 28;
+        nameText.fontSize = 48;
         nameText.fontStyle = TMPro.FontStyles.Bold;
         nameText.color = new Color(0.4f, 0.7f, 1f);
         nameText.alignment = TMPro.TextAlignmentOptions.Left;
@@ -354,7 +354,7 @@ public class DialogueManager : MonoBehaviour
         dialogueRect.offsetMax = new Vector2(-30, -20);
         TextMeshProUGUI dialogueText = dialogueObj.AddComponent<TextMeshProUGUI>();
         dialogueText.text = "";
-        dialogueText.fontSize = 26;
+        dialogueText.fontSize = 36;
         dialogueText.color = Color.white;
         dialogueText.alignment = TMPro.TextAlignmentOptions.TopLeft;
         dialogueText.enableWordWrapping = true;

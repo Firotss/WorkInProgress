@@ -402,12 +402,22 @@ public class UIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Hides start panel, waits for the "scene after play" to be ready, then shows the dialogue.
+    /// Hides start panel, starts the game scene, then shows the dialogue on top.
     /// </summary>
     private IEnumerator ShowDialogueAfterPlayLoad()
     {
         if (startPanel != null)
             startPanel.SetActive(false);
+
+        // Start the game first so the scene is visible
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.StartGame();
+            UpdateAllUI();
+        }
+
+        // Wait a frame to let the game scene initialize
+        yield return null;
 
         if (dialogueManager == null)
         {
@@ -420,14 +430,11 @@ public class UIManager : MonoBehaviour
 
         if (dialogueManager == null)
         {
-            Debug.LogWarning("UIManager: DialogueManager not found! Starting game directly.");
-            if (GameManager.Instance != null)
-                GameManager.Instance.StartGame();
+            Debug.LogWarning("UIManager: DialogueManager not found! Game started without dialogue.");
             yield break;
         }
 
-        yield return null;
-
+        // Show dialogue on top of the game scene
         dialogueManager.OnDialogueCompleted += OnDialogueCompleted;
         dialogueManager.StartDialogue();
     }
@@ -442,11 +449,8 @@ public class UIManager : MonoBehaviour
         if (startPanel != null)
             startPanel.SetActive(false);
 
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.StartGame();
-            UpdateAllUI();
-        }
+        // Game is already started, just update UI
+        UpdateAllUI();
     }
 
     private void OnRestartClicked()
