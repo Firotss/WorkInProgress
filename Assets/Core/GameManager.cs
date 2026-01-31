@@ -384,9 +384,17 @@ public class GameManager : MonoBehaviour
 
     public void RestartGame()
     {
-        Debug.Log("Restarting game...");
+        Debug.Log("Restarting game - returning to start screen...");
         turnManager.Reset();
-        StartGame();
+
+        // Reset entities immediately to restore positions
+        if (monster != null)
+            monster.ResetMonster();
+        if (player != null)
+            player.ResetPlayer();
+
+        CurrentState = GameState.NotStarted;
+        OnGameStateChanged?.Invoke(CurrentState);
     }
     
     #endregion

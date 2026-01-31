@@ -235,4 +235,22 @@ public class MonsterVisual : MonoBehaviour
     {
         UpdateStageColor();
     }
+
+    /// <summary>
+    /// Resets visual state, stopping any running animations.
+    /// </summary>
+    public void ResetVisuals()
+    {
+        StopAllCoroutines();
+        isFlashing = false;
+        UpdateStageColor();
+
+        // Restore material alpha in case defeat animation was interrupted
+        if (monsterRenderer != null)
+        {
+            Color color = monsterRenderer.material.color;
+            color.a = 1f;
+            monsterRenderer.material.color = color;
+        }
+    }
 }

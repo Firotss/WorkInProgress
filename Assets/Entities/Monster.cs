@@ -64,15 +64,23 @@ public class Monster : MonoBehaviour
     public event Action<int, int> OnDamageTaken; // current health, max health
 
     private Renderer monsterRenderer;
+    private MonsterVisual monsterVisual;
+    private Vector3 initialPosition;
+    private Quaternion initialRotation;
+    private Vector3 initialScale;
 
     /// <summary>
     /// Initialize monster at stage 1.
     /// </summary>
     private void Awake()
     {
+        initialPosition = transform.position;
+        initialRotation = transform.rotation;
+        initialScale = transform.localScale;
         CurrentStage = 1;
         CurrentHealth = healthPerStage;
         monsterRenderer = GetComponent<Renderer>();
+        monsterVisual = GetComponent<MonsterVisual>();
         UpdateVisualAppearance();
     }
 
@@ -173,7 +181,14 @@ public class Monster : MonoBehaviour
     {
         CurrentStage = 1;
         CurrentHealth = healthPerStage;
+        transform.position = initialPosition;
+        transform.rotation = initialRotation;
+        transform.localScale = initialScale;
         UpdateVisualAppearance();
+
+        // Stop any running visual animations and reset visuals
+        if (monsterVisual != null)
+            monsterVisual.ResetVisuals();
     }
 
     /// <summary>
