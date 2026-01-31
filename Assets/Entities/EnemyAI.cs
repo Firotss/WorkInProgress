@@ -12,20 +12,20 @@ public class EnemyAI : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private BoardManager enemyBoard;
-    [SerializeField] private Deck enemyDeck;
+    [SerializeField] private Deck deck;
 
     /// <summary>
-    /// Reference to the enemy's deck.
+    /// Reference to the shared deck (same as player's).
     /// </summary>
-    public Deck EnemyDeck => enemyDeck;
+    public Deck Deck => deck;
 
     /// <summary>
     /// Sets references.
     /// </summary>
-    public void Initialize(BoardManager board, Deck deck)
+    public void Initialize(BoardManager board, Deck sharedDeck)
     {
         enemyBoard = board;
-        enemyDeck = deck;
+        deck = sharedDeck;
     }
 
     /// <summary>
@@ -33,7 +33,7 @@ public class EnemyAI : MonoBehaviour
     /// </summary>
     public void PlayTurn()
     {
-        if (enemyBoard == null || enemyDeck == null)
+        if (enemyBoard == null || deck == null)
         {
             Debug.LogWarning("EnemyAI: Missing board or deck reference!");
             return;
@@ -50,14 +50,14 @@ public class EnemyAI : MonoBehaviour
 
     private void PlayRandomCardInRandomColumn()
     {
-        Card cardData = enemyDeck.DrawCard();
+        Card cardData = deck.DrawCard();
         if (cardData == null)
             return;
 
         int col = GetRandomEmptyColumn();
         if (col < 0)
         {
-            enemyDeck.AddToDiscard(cardData);
+            deck.AddToDiscard(cardData);
             return;
         }
 

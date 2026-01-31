@@ -27,8 +27,7 @@ public class GameSetup : MonoBehaviour
         CreateMonster();
         CreatePlayerBoard();
         CreateEnemyBoard();
-        CreatePlayerDeck();
-        CreateEnemyDeck();
+        CreateDeck();
         CreateHand();
         CreateEnemyAI();
         
@@ -146,28 +145,15 @@ public class GameSetup : MonoBehaviour
         // Debug.Log("Created: Enemy Board");
     }
 
-    private void CreatePlayerDeck()
+    private void CreateDeck()
     {
-        Deck[] decks = FindObjectsOfType<Deck>();
-        if (decks.Length >= 1) return;
-        
-        GameObject deckObj = new GameObject("PlayerDeck");
-        deckObj.transform.position = new Vector3(6f, 0, -6f);
-        deckObj.AddComponent<Deck>();
-        
-        Debug.Log("Created: Player Deck");
-    }
+        if (FindObjectOfType<Deck>() != null) return;
 
-    private void CreateEnemyDeck()
-    {
-        Deck[] decks = FindObjectsOfType<Deck>();
-        if (decks.Length >= 2) return;
-        
-        GameObject deckObj = new GameObject("EnemyDeck");
-        deckObj.transform.position = new Vector3(6f, 0, 6f);
+        GameObject deckObj = new GameObject("Deck");
+        deckObj.transform.position = new Vector3(0f, 0f, 0f);
         deckObj.AddComponent<Deck>();
-        
-        Debug.Log("Created: Enemy Deck");
+
+        Debug.Log("Created: Deck (shared by player and enemy)");
     }
 
     private void CreateHand()

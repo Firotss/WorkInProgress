@@ -39,8 +39,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private BoardManager playerBoard;
     [SerializeField] private BoardManager enemyBoard;
     [SerializeField] private Hand hand;
-    [SerializeField] private Deck playerDeck;
-    [SerializeField] private Deck enemyDeck;
+    [SerializeField] private Deck deck;
     [SerializeField] private TurnManager turnManager;
     [SerializeField] private UIManager uiManager;
     [SerializeField] private EnemyAI enemyAI;
@@ -131,8 +130,7 @@ public class GameManager : MonoBehaviour
         if (hand == null) hand = FindObjectOfType<Hand>();
         
         Deck[] decks = FindObjectsOfType<Deck>();
-        if (decks.Length >= 2) { playerDeck = decks[0]; enemyDeck = decks[1]; }
-        else if (decks.Length == 1) { playerDeck = decks[0]; }
+        if (decks.Length >= 1) deck = decks[0];
             
         if (turnManager == null) turnManager = FindObjectOfType<TurnManager>();
         if (uiManager == null) uiManager = FindObjectOfType<UIManager>();
@@ -165,7 +163,7 @@ public class GameManager : MonoBehaviour
         if (playerBoard == null) { Debug.LogError("Player Board not found!"); valid = false; }
         if (enemyBoard == null) { Debug.LogError("Enemy Board not found!"); valid = false; }
         if (hand == null) { Debug.LogError("Hand not found!"); valid = false; }
-        if (playerDeck == null) { Debug.LogError("Player Deck not found!"); valid = false; }
+        if (deck == null) { Debug.LogError("Deck not found!"); valid = false; }
         if (turnManager == null) { Debug.LogError("TurnManager not found!"); valid = false; }
         
         return valid;
@@ -176,16 +174,15 @@ public class GameManager : MonoBehaviour
         player.ResetPlayer();
         monster.ResetMonster();
         
-        hand.SetDeck(playerDeck);
+        hand.SetDeck(deck);
         hand.SetPlayerBoard(playerBoard);
-        playerDeck.ResetDeck();
+        deck.ResetDeck();
         hand.ClearHand();
-        hand.DrawInitialCards(); 
+        hand.DrawInitialCards();
 
-        enemyDeck.ResetDeck();
-        playerBoard.SetDeck(playerDeck);
-        enemyBoard.SetDeck(enemyDeck);
-        enemyAI.Initialize(enemyBoard, enemyDeck);
+        playerBoard.SetDeck(deck);
+        enemyBoard.SetDeck(deck);
+        enemyAI.Initialize(enemyBoard, deck);
         playerBoard.ClearBoard();
         enemyBoard.ClearBoard();
         
