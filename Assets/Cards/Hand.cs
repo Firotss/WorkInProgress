@@ -172,34 +172,45 @@ public class Hand : MonoBehaviour
 
     public void SelectCard(CardVisual card)
     {
-        // If clicking the same card, deselect it
+        // --- ИЗМЕНЕНИЕ: УБИРАЕМ ЛОГИКУ ДЕСЕЛЕКТА ПРИ ПОВТОРНОМ КЛИКЕ ---
+        // Если мы кликаем по уже выбранной карте, мы хотим продолжить её держать/тащить,
+        // а не сбрасывать.
         if (SelectedCard == card)
         {
-            SelectedCard.SetSelected(false);
-            SelectedCard = null;
-            ArrangeCards(); // Rearrange to lower the card
-            Debug.Log("Card deselected");
-            return;
+            // Можно просто выйти, ничего не меняя, чтобы не пересчитывать позицию лишний раз
+            return; 
         }
-        
-        // Deselect previous card
+        // ---------------------------------------------------------------
+
+        // Снимаем выделение с предыдущей карты (если была другая)
         if (SelectedCard != null)
+        {
             SelectedCard.SetSelected(false);
+        }
+
+        // Выбираем новую
         SelectedCard = card;
         SelectedCard.SetSelected(true);
-        ArrangeCards(); // Rearrange to raise the card
+        
+        ArrangeCards(); // Пересчитываем позицию (поднимаем карту)
         
         OnCardSelected?.Invoke(card);
         Debug.Log($"Selected card: {SelectedCard.CardData.CardName}");
     }
 
+    // Внутри скрипта Hand.cs
+
     public void DeselectCard()
     {
         if (SelectedCard != null)
         {
-            SelectedCard.SetSelected(false);
-            SelectedCard = null;
-            ArrangeCards();
+            SelectedCard.SetSelected(false); // Визуально выключаем подсветку
+            
+            // Возвращаем карту на место (если она была приподнята)
+            // Если у вас есть метод ArrangeCards(), вызовите его
+            // ArrangeCards(); 
+            
+            SelectedCard = null; // Обнуляем ссылку
         }
     }
 

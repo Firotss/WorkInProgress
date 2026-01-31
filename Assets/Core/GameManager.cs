@@ -275,23 +275,79 @@ public class GameManager : MonoBehaviour
 
     #region Card Placement
     
+   // Inside GameManager.cs variables/properties
+    private int cardsPlayedThisTurn = 0;
+    private const int MAX_CARDS_PER_TURN = 3;
+
+    // ...
+
+    // Update TryPlaceCardInColumn
     public void TryPlaceCardInColumn(int column)
     {
         if (CurrentState != GameState.PlayerTurn)
             return;
-        if (turnManager != null && !turnManager.CanPlaceCard())
+
+        // 1. LIMIT CHECK
+        // You can check turnManager.CanPlaceCard() OR check local counter
+        if (cardsPlayedThisTurn >= MAX_CARDS_PER_TURN) 
+        {
+            Debug.LogWarning($"Cannot place card: Limit reached ({cardsPlayedThisTurn}/{MAX_CARDS_PER_TURN})");
+            // Optional: uiManager.ShowNotification("Max 3 cards per turn!");
             return;
+        }
+
         CardVisual selectedCard = hand.SelectedCard;
         if (selectedCard == null)
             return;
+
         if (playerBoard.PlaceCard(selectedCard, column))
         {
             hand.RemoveCard(selectedCard);
-            turnManager?.RecordCardPlaced();
+            
+            // 2. INCREMENT COUNTER
+            cardsPlayedThisTurn++;
+            turnManager?.RecordCardPlaced(); // Keep this to sync with TurnManager
+            
             SelectedBoardCardForWithdraw = null;
             SoundManager.Instance?.PlayCardPlaced();
-            Debug.Log($"Card placed in column {column}: {selectedCard.CardData.CardName}");
+            Debug.Log($"Card placed in column {column}. Cards played: {cardsPlayedThisTurn}/{MAX_CARDS_PER_TURN}");
         }
+    }
+
+    // Update TryWithdrawCard to decrease counter (if game rules allow taking back a move)
+    public void TryWithdrawCard()
+    {
+        if (CurrentState != GameState.PlayerTurn)
+            return;
+
+        CardVisual toWithdraw = SelectedBoardCardForWithdraw;
+        if (toWithdraw == null)
+            return;
+
+        if (playerBoard == null || hand == null || !playerBoard.TryRemoveCardFromRow0(toWithdraw))
+            return;
+
+        hand.AddCardBack(toWithdraw);
+        
+        // 3. DECREMENT COUNTER (Allow playing another card if one is withdrawn)
+        if (cardsPlayedThisTurn > 0) cardsPlayedThisTurn--;
+        
+        turnManager?.RecordCardWithdrawn();
+        
+        // Deselect the card we just withdrew (it's in hand now)
+        DeselectBoardCard(); 
+
+        SoundManager.Instance?.PlayCardWithdrawn();
+        Debug.Log($"Card withdrawn. Cards played: {cardsPlayedThisTurn}/{MAX_CARDS_PER_TURN}");
+    }
+
+    // Add this to StartNewTurn logic (likely in TurnManager, but if GM controls state...)
+    // You likely have a method called by TurnManager when turn starts.
+    // If not, add a method like this and call it from TurnManager.StartTurn():
+    public void ResetTurnCounters()
+    {
+        cardsPlayedThisTurn = 0;
+        Debug.Log("Turn counters reset.");
     }
 
     public bool IsCardOnPlayerRow0(CardVisual card)
@@ -299,25 +355,43 @@ public class GameManager : MonoBehaviour
         return playerBoard != null && card != null && playerBoard.GetCardRow(card) == 0;
     }
 
+    // Inside GameManager.cs
+
+    // Rename or use this property for clarity if SelectedBoardCardForWithdraw is just internal
+    public CardVisual SelectedBoardCard => SelectedBoardCardForWithdraw;
+
     public void SetSelectedBoardCardForWithdraw(CardVisual card)
     {
+        // LOGIC CHANGE: If we click the same card that is already selected -> Deselect it
+        if (SelectedBoardCardForWithdraw == card)
+        {
+            DeselectBoardCard();
+            return;
+        }
+
+        // If another card was selected, deselect it first
+        if (SelectedBoardCardForWithdraw != null)
+        {
+            SelectedBoardCardForWithdraw.SetSelected(false); // Visually deselect old one
+        }
+
         SelectedBoardCardForWithdraw = card;
+        
+        if (SelectedBoardCardForWithdraw != null)
+        {
+            SelectedBoardCardForWithdraw.SetSelected(true); // Visually select new one
+            Debug.Log($"Board card selected: {card.CardData.CardName}");
+        }
     }
 
-    public void TryWithdrawCard()
+    public void DeselectBoardCard()
     {
-        if (CurrentState != GameState.PlayerTurn)
-            return;
-        CardVisual toWithdraw = SelectedBoardCardForWithdraw;
-        if (toWithdraw == null)
-            return;
-        if (playerBoard == null || hand == null || !playerBoard.TryRemoveCardFromRow0(toWithdraw))
-            return;
-        hand.AddCardBack(toWithdraw);
-        turnManager?.RecordCardWithdrawn();
-        SelectedBoardCardForWithdraw = null;
-        SoundManager.Instance?.PlayCardWithdrawn();
-        Debug.Log($"Card withdrawn to hand: {toWithdraw.CardData.CardName}");
+        if (SelectedBoardCardForWithdraw != null)
+        {
+            SelectedBoardCardForWithdraw.SetSelected(false); // Выключаем подсветку
+            SelectedBoardCardForWithdraw = null;
+            Debug.Log("GameManager: Снято выделение с карты на столе.");
+        }
     }
 
     public void TryPlaceSelectedCard()
