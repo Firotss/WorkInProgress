@@ -8,7 +8,7 @@ public class BoardManager : MonoBehaviour
     [SerializeField] private int rows = 3;
     [SerializeField] private int columns = 5;
     [SerializeField] private float slotSpacing = 1.2f;
-    [SerializeField] private Vector3 boardOffset = new Vector3(-2.4f, 0, 0);
+    [SerializeField] private Vector3 boardOffset = new Vector3(-3f, 0, 0);
     [SerializeField] private bool isPlayerBoard = true;
 
     [Header("Visual Settings")]
@@ -410,6 +410,34 @@ public class BoardManager : MonoBehaviour
         float localX = worldPos.x - transform.position.x - boardOffset.x;
         int col = Mathf.RoundToInt(localX / slotSpacing);
         return Mathf.Clamp(col, 0, columns - 1);
+    }
+    //shit code do not write it at home 
+    public int GetNearestEmptyColumn(Vector3 worldPos)
+    {
+        if (slots == null) return -1;
+
+        int preferredCol = GetColumnFromWorldPosition(worldPos);
+        if (preferredCol >= 0 && preferredCol < columns && !slots[0, preferredCol].HasCard)
+            return preferredCol;
+
+        int bestCol = -1;
+        float bestDistSq = float.MaxValue;
+        Vector3 flatPos = new Vector3(worldPos.x, 0f, worldPos.z);
+
+        for (int col = 0; col < columns; col++)
+        {
+            if (slots[0, col].HasCard) continue;
+            Vector3 slotPos = slots[0, col].WorldPosition;
+            Vector3 flatSlot = new Vector3(slotPos.x, 0f, slotPos.z);
+            float distSq = (flatPos - flatSlot).sqrMagnitude;
+            if (distSq < bestDistSq)
+            {
+                bestDistSq = distSq;
+                bestCol = col;
+            }
+        }
+
+        return bestCol;
     }
 
     public void ClearBoard()

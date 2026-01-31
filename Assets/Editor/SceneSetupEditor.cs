@@ -25,8 +25,7 @@ public class SceneSetupEditor : Editor
         CreateMonster();
         CreatePlayerBoard();
         CreateEnemyBoard();
-        CreatePlayerDeck();
-        CreateEnemyDeck();
+        CreateDeck();
         CreateHand();
         CreateEnemyAI();
         CreateUI();
@@ -43,7 +42,7 @@ public class SceneSetupEditor : Editor
     {
         string[] objectsToDestroy = { 
             "GameController", "GameManager", "Player", "Monster", 
-            "PlayerBoard", "EnemyBoard", "Board", "PlayerDeck", "EnemyDeck", 
+            "PlayerBoard", "EnemyBoard", "Board", "PlayerDeck", "EnemyDeck",
             "Deck", "Hand", "EnemyAI", "UICanvas", "Ground" 
         };
         
@@ -165,22 +164,13 @@ public class SceneSetupEditor : Editor
         Debug.Log("Created: Enemy Board");
     }
 
-    private static void CreatePlayerDeck()
+    private static void CreateDeck()
     {
-        GameObject deckObj = new GameObject("PlayerDeck");
-        deckObj.transform.position = new Vector3(6f, 0, -6f);
+        GameObject deckObj = new GameObject("Deck");
+        deckObj.transform.position = new Vector3(0f, 0f, 0f);
         deckObj.AddComponent<Deck>();
-        
-        Debug.Log("Created: Player Deck");
-    }
 
-    private static void CreateEnemyDeck()
-    {
-        GameObject deckObj = new GameObject("EnemyDeck");
-        deckObj.transform.position = new Vector3(6f, 0, 6f);
-        deckObj.AddComponent<Deck>();
-        
-        Debug.Log("Created: Enemy Deck");
+        Debug.Log("Created: Deck (shared by player and enemy)");
     }
 
     private static void CreateHand()

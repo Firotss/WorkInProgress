@@ -73,7 +73,8 @@ public class InputHandler : MonoBehaviour
                 }
 
                 // Б. КАРТА В РУКЕ (Начинаем перетаскивать)
-                if (GameManager.Instance != null && GameManager.Instance.PlayerHand != null)
+                // Only allow picking up cards if player hasn't reached the placement limit
+                if (GameManager.Instance != null && GameManager.Instance.PlayerHand != null && GameManager.Instance.CanPlaceCard())
                 {
                     GameManager.Instance.PlayerHand.SelectCard(card);
 
@@ -165,11 +166,9 @@ public class InputHandler : MonoBehaviour
                 BoardManager board = GameManager.Instance.Board;
                 if (board != null)
                 {
-                    int column = board.GetColumnFromWorldPosition(hit.point);
-                    
-                    // Try to place the card. 
-                    // GameManager checks logic (is turn valid? is slot free? card limit reached?)
-                    GameManager.Instance.TryPlaceCardInColumn(column);
+                    int column = board.GetNearestEmptyColumn(hit.point);
+                    if (column >= 0)
+                        GameManager.Instance.TryPlaceCardInColumn(column);
                     
                     // Check if placement was successful by checking card state
                     if (draggingCard.IsOnBoard) 
@@ -218,23 +217,5 @@ public class InputHandler : MonoBehaviour
                 GameManager.Instance.RestartGame();
             }
         }
-
-        for (int i = 0; i < 5; i++)
-        {
-            if (Input.GetKeyDown(KeyCode.Alpha1 + i))
-                SelectCardByIndex(i);
-        }
-    }
-
-    private void SelectCardByIndex(int index)
-    {
-        if (GameManager.Instance == null) return;
-
-        Hand hand = GameManager.Instance.PlayerHand;
-        if (hand == null) return;
-
-        var cards = hand.GetCardsInHand();
-        if (index >= 0 && index < cards.Count)
-            hand.SelectCard(cards[index]);
     }
 }
