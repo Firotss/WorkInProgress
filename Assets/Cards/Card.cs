@@ -26,6 +26,7 @@ public class Card
     [SerializeField] private CardType cardType;
     [SerializeField] private string cardName;
     [SerializeField] private int score;
+    [SerializeField] private int hp;
     [SerializeField] private Ability ability;
     [SerializeField] private Sprite artwork;
 
@@ -37,6 +38,8 @@ public class Card
 
     /// <summary>Score / strength value for the card's effect.</summary>
     public int Score => score;
+
+    public int HP => hp;
 
     /// <summary>Action points (alias for Score for compatibility).</summary>
     public int ActionPoints => score;
@@ -50,11 +53,12 @@ public class Card
     /// <summary>
     /// Creates a card with type, name, score, optional ability and artwork.
     /// </summary>
-    public Card(CardType type, string name, int score, Ability ability = null,
+    public Card(CardType type, string name, int score, int hp, Ability ability = null,
         Sprite artwork = null)
     {
         cardType = type;
         cardName = name;
+        this.hp = hp;
         this.score = score;
         this.ability = ability;
         this.artwork = artwork;

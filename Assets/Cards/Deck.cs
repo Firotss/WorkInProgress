@@ -39,24 +39,45 @@ public class Deck : MonoBehaviour
         CardType defender = new CardType("defender", "blue");
         CardType spell = new CardType("spell", "green");
 
+        Ability crowd_control = new Ability("crowd control");
+        Ability creature_damage_increase = new Ability("creature damage increase");
+        Ability knight_ultimate = new Ability("knight ultimate");
+        Ability points_steal = new Ability("points steal");
+        Ability point_increase = new Ability("point increase");
+
         Ability heal = new Ability("heal");
         Ability maxIncrease = new Ability("max hand increase");
 
-        Sprite redSprite = GetSpriteForType("red");
-        Sprite greenSprite = GetSpriteForType("green");
-        Sprite dragonSprite = GetSpriteForType("dragon");
-        Sprite blueSprite = GetSpriteForType("blue");
+        Sprite babyForestDragonSprite = GetSpriteForType("Baby_Forest_Dragon");
+        Sprite bloodFiendSprite = GetSpriteForType("Blood_Fiend");
+        Sprite chaliceofVigorSprite = GetSpriteForType("Chalice_of_Vigor");
+        Sprite chasingthegooseSprite = GetSpriteForType("Chasing_the_goose");
+        Sprite fiendFeedingSprite = GetSpriteForType("Fiend_Feeding");
+        Sprite forestDragonSprite = GetSpriteForType("Forest_Dragon");
+        Sprite quintessenceSprite = GetSpriteForType("Quintessence");
+        Sprite sweetKittenSprite = GetSpriteForType("Sweet_Kitten");
+        Sprite theDecrepitKnightSprite = GetSpriteForType("The_Decrepit_Knight");
 
+        for (int i = 0; i < 10; i++)
+            deck.Add(new Card(attacker, "Baby Forest Dragon", 3, 15, creature_damage_increase, babyForestDragonSprite));
+        for (int i = 0; i < 10; i++)
+            deck.Add(new Card(attacker, "Blood Fiend", 2, 20, points_steal, bloodFiendSprite));
         for (int i = 0; i < 5; i++)
-            deck.Add(new Card(spell, "Heal Potion", 250, heal, greenSprite));
+            deck.Add(new Card(attacker, "Forest Dragon", 7, 10, crowd_control, forestDragonSprite));
+        for (int i = 0; i < 3; i++)
+            deck.Add(new Card(attacker, "The Decrepit Knight", 3, 30, knight_ultimate, theDecrepitKnightSprite));
+        for (int i = 0; i < 15; i++)
+            deck.Add(new Card(attacker, "Sweet Kitten", 5, 15, point_increase, sweetKittenSprite));
+
+        for (int i = 0; i < 15; i++)
+            deck.Add(new Card(defender, "Chalice of Vigor", 3, 30, null, chaliceofVigorSprite));
+        for (int i = 0; i < 10; i++)
+            deck.Add(new Card(defender, "Chasing the Goose", 5, 50, null, chasingthegooseSprite));
+
+        for (int i = 0; i < 10; i++)
+            deck.Add(new Card(spell, "Fiend Feeding", 1, 20, maxIncrease, fiendFeedingSprite));
         for (int i = 0; i < 5; i++)
-            deck.Add(new Card(spell, "Bag of Holding", 1, maxIncrease, greenSprite));
-        for (int i = 0; i < 10; i++)
-            deck.Add(new Card(attacker, "Dragon", 10, null, dragonSprite));
-        for (int i = 0; i < 10; i++)
-            deck.Add(new Card(attacker, "Wolf", 5, null, redSprite));
-        for (int i = 0; i < 10; i++)
-            deck.Add(new Card(defender, "Wall", 10, null, blueSprite));
+            deck.Add(new Card(spell, "Quintessence", 1, 20, heal, quintessenceSprite));
 
         Debug.Log($"Deck size: {deck.Count}");
         ShuffleDeck();
@@ -64,25 +85,21 @@ public class Deck : MonoBehaviour
 
     private static readonly Dictionary<string, Sprite> SpriteCache = new Dictionary<string, Sprite>();
 
-    private Sprite GetSpriteForType(string color)
+    private Sprite GetSpriteForType(string name)
     {
-        if (color == "red" && redCardSprite != null) return redCardSprite;
-        if (color == "green" && greenCardSprite != null) return greenCardSprite;
-        if (color == "blue" && blueCardSprite != null) return blueCardSprite;
-
-        string key = color;
+        string key = name;
         if (SpriteCache.TryGetValue(key, out Sprite cached))
             return cached;
 
-        string name = char.ToUpper(color[0]) + color.Substring(1) + "_Texture";
-        Sprite loaded = Resources.Load<Sprite>($"Arts/{name}");
+        Debug.Log($"Loading sprite: {name}");
+        Sprite loaded = Resources.Load<Sprite>($"Arts/Cards/{name}");
         if (loaded != null)
         {
             SpriteCache[key] = loaded;
             return loaded;
         }
 
-        Texture2D tex = Resources.Load<Texture2D>($"Arts/{name}");
+        Texture2D tex = Resources.Load<Texture2D>($"Arts/Cards/{name}");
         if (tex != null)
         {
             Sprite sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
