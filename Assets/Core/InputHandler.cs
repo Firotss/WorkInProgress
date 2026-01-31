@@ -218,23 +218,5 @@ public class InputHandler : MonoBehaviour
                 GameManager.Instance.RestartGame();
             }
         }
-
-        for (int i = 0; i < 5; i++)
-        {
-            if (Input.GetKeyDown(KeyCode.Alpha1 + i))
-                SelectCardByIndex(i);
-        }
-    }
-
-    private void SelectCardByIndex(int index)
-    {
-        if (GameManager.Instance == null) return;
-
-        Hand hand = GameManager.Instance.PlayerHand;
-        if (hand == null) return;
-
-        var cards = hand.GetCardsInHand();
-        if (index >= 0 && index < cards.Count)
-            hand.SelectCard(cards[index]);
     }
 }

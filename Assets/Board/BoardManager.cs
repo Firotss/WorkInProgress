@@ -8,7 +8,7 @@ public class BoardManager : MonoBehaviour
     [SerializeField] private int rows = 3;
     [SerializeField] private int columns = 5;
     [SerializeField] private float slotSpacing = 1.2f;
-    [SerializeField] private Vector3 boardOffset = new Vector3(-2.4f, 0, 0);
+    [SerializeField] private Vector3 boardOffset = new Vector3(-3f, 0, 0);
     [SerializeField] private bool isPlayerBoard = true;
 
     [Header("Visual Settings")]
