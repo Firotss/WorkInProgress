@@ -179,8 +179,16 @@ public class GameSetup : MonoBehaviour
 
     private void CreateUI()
     {
-        if (FindObjectOfType<UIManager>() != null) return;
-        
+        EnsureEventSystem();
+
+        UIManager existingUI = FindObjectOfType<UIManager>();
+        if (existingUI != null)
+        {
+            // UI already exists, but ensure DialoguePanel is created
+            EnsureDialoguePanel(existingUI.transform);
+            return;
+        }
+
         GameObject canvasObj = new GameObject("UICanvas");
         Canvas canvas = canvasObj.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -233,6 +241,7 @@ public class GameSetup : MonoBehaviour
 
         CreateStartPanel(canvasObj.transform);
         CreateGameEndPanel(canvasObj.transform);
+        CreateDialoguePanel(canvasObj.transform);
 
         Debug.Log("Created: UI Canvas");
     }
@@ -245,6 +254,30 @@ public class GameSetup : MonoBehaviour
         eventSystemObj.AddComponent<EventSystem>();
         eventSystemObj.AddComponent<StandaloneInputModule>();
         Debug.Log("Created: EventSystem (required for UI button clicks)");
+    }
+
+    private void EnsureDialoguePanel(Transform canvasTransform)
+    {
+        // Check if DialoguePanel already exists
+        Transform existingPanel = canvasTransform.Find("DialoguePanel");
+        if (existingPanel != null)
+        {
+            Debug.Log("DialoguePanel already exists");
+            // Ensure DialogueManager exists on canvas
+            if (canvasTransform.GetComponent<DialogueManager>() == null)
+            {
+                DialogueManager dm = canvasTransform.gameObject.AddComponent<DialogueManager>();
+                // Find and set references
+                TextMeshProUGUI nameText = existingPanel.Find("SpeakerNameText")?.GetComponent<TextMeshProUGUI>();
+                TextMeshProUGUI dialogueText = existingPanel.Find("DialogueText")?.GetComponent<TextMeshProUGUI>();
+                Button nextButton = existingPanel.Find("DialogueNextButton")?.GetComponent<Button>();
+                dm.SetReferences(existingPanel.gameObject, nameText, dialogueText, nextButton);
+            }
+            return;
+        }
+
+        // Create DialoguePanel
+        CreateDialoguePanel(canvasTransform);
     }
 
     private void CreateStartPanel(Transform parent)
@@ -332,16 +365,16 @@ public class GameSetup : MonoBehaviour
     {
         GameObject panel = new GameObject("GameEndPanel");
         panel.transform.SetParent(parent, false);
-        
+
         RectTransform rect = panel.AddComponent<RectTransform>();
         rect.anchorMin = Vector2.zero;
         rect.anchorMax = Vector2.one;
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
-        
+
         Image bg = panel.AddComponent<Image>();
         bg.color = new Color(0, 0, 0, 0.9f);
-        
+
         GameObject endTextObj = CreateText(panel.transform, "GameEndText", "GAME OVER", new Vector2(0, 80), 56);
         if (endTextObj != null)
             endTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(700, 100);
@@ -349,6 +382,110 @@ public class GameSetup : MonoBehaviour
         CreateButton(panel.transform, "RestartButton", "PLAY AGAIN", new Vector2(0, -120), new Vector2(280, 70));
 
         panel.SetActive(false);
+    }
+
+    private void CreateDialoguePanel(Transform parent)
+    {
+        // Main dialogue panel - positioned at bottom with 10% margin
+        GameObject panel = new GameObject("DialoguePanel");
+        panel.transform.SetParent(parent, false);
+
+        RectTransform panelRect = panel.AddComponent<RectTransform>();
+        // Anchor to bottom, with 10% margin from bottom
+        panelRect.anchorMin = new Vector2(0.1f, 0.1f);
+        panelRect.anchorMax = new Vector2(0.9f, 0.35f);
+        panelRect.offsetMin = Vector2.zero;
+        panelRect.offsetMax = Vector2.zero;
+
+        // Semi-transparent dark background
+        Image panelBg = panel.AddComponent<Image>();
+        panelBg.color = new Color(0.05f, 0.05f, 0.1f, 0.95f);
+
+        // Add border effect
+        Outline outline = panel.AddComponent<Outline>();
+        outline.effectColor = new Color(0.3f, 0.3f, 0.4f, 1f);
+        outline.effectDistance = new Vector2(3, 3);
+
+        // Speaker name text - positioned at top-left of panel
+        GameObject nameObj = new GameObject("SpeakerNameText");
+        nameObj.transform.SetParent(panel.transform, false);
+
+        RectTransform nameRect = nameObj.AddComponent<RectTransform>();
+        nameRect.anchorMin = new Vector2(0, 1);
+        nameRect.anchorMax = new Vector2(0, 1);
+        nameRect.pivot = new Vector2(0, 1);
+        nameRect.anchoredPosition = new Vector2(20, 30);
+        nameRect.sizeDelta = new Vector2(400, 50);
+
+        TextMeshProUGUI nameText = nameObj.AddComponent<TextMeshProUGUI>();
+        nameText.text = "Speaker";
+        nameText.fontSize = 28;
+        nameText.fontStyle = TMPro.FontStyles.Bold;
+        nameText.color = new Color(0.4f, 0.7f, 1f);
+        nameText.alignment = TMPro.TextAlignmentOptions.Left;
+
+        // Name background for better visibility
+        GameObject nameBgObj = new GameObject("SpeakerNameBg");
+        nameBgObj.transform.SetParent(panel.transform, false);
+        nameBgObj.transform.SetSiblingIndex(0); // Put behind name text
+
+        RectTransform nameBgRect = nameBgObj.AddComponent<RectTransform>();
+        nameBgRect.anchorMin = new Vector2(0, 1);
+        nameBgRect.anchorMax = new Vector2(0, 1);
+        nameBgRect.pivot = new Vector2(0, 1);
+        nameBgRect.anchoredPosition = new Vector2(10, 40);
+        nameBgRect.sizeDelta = new Vector2(250, 45);
+
+        Image nameBgImage = nameBgObj.AddComponent<Image>();
+        nameBgImage.color = new Color(0.1f, 0.1f, 0.15f, 0.98f);
+
+        // Dialogue text - main content area
+        GameObject dialogueObj = new GameObject("DialogueText");
+        dialogueObj.transform.SetParent(panel.transform, false);
+
+        RectTransform dialogueRect = dialogueObj.AddComponent<RectTransform>();
+        dialogueRect.anchorMin = new Vector2(0, 0);
+        dialogueRect.anchorMax = new Vector2(1, 1);
+        dialogueRect.offsetMin = new Vector2(30, 60);
+        dialogueRect.offsetMax = new Vector2(-30, -20);
+
+        TextMeshProUGUI dialogueText = dialogueObj.AddComponent<TextMeshProUGUI>();
+        dialogueText.text = "";
+        dialogueText.fontSize = 26;
+        dialogueText.color = Color.white;
+        dialogueText.alignment = TMPro.TextAlignmentOptions.TopLeft;
+        dialogueText.enableWordWrapping = true;
+
+        // Next button - positioned at bottom-right of panel
+        GameObject nextBtn = CreateButton(panel.transform, "DialogueNextButton", "Next",
+            new Vector2(0, 0), new Vector2(140, 50));
+
+        if (nextBtn != null)
+        {
+            RectTransform btnRect = nextBtn.GetComponent<RectTransform>();
+            btnRect.anchorMin = new Vector2(1, 0);
+            btnRect.anchorMax = new Vector2(1, 0);
+            btnRect.pivot = new Vector2(1, 0);
+            btnRect.anchoredPosition = new Vector2(-20, 15);
+
+            Image btnImg = nextBtn.GetComponent<Image>();
+            if (btnImg != null)
+                btnImg.color = new Color(0.25f, 0.45f, 0.65f);
+        }
+
+        // Add DialogueManager component to the CANVAS (parent) so it can be found when panel is inactive
+        DialogueManager dialogueManager = parent.GetComponent<DialogueManager>();
+        if (dialogueManager == null)
+            dialogueManager = parent.gameObject.AddComponent<DialogueManager>();
+
+        // Set references
+        Button nextButton = nextBtn != null ? nextBtn.GetComponent<Button>() : null;
+        dialogueManager.SetReferences(panel, nameText, dialogueText, nextButton);
+
+        Debug.Log($"DialogueManager created on Canvas. Panel: {panel.name}");
+
+        panel.SetActive(false);
+        Debug.Log("Created: Dialogue Panel");
     }
 
     private void CreateCamera()

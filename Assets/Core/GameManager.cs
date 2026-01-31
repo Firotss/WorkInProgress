@@ -187,11 +187,12 @@ public class GameManager : MonoBehaviour
         enemyBoard.SetDeck(deck);
         enemyAI.Initialize(enemyBoard, deck);
         playerBoard.ClearBoard();
-        enemyBoard.ClearBoard();
-        
+        if (enemyBoard != null)
+            enemyBoard.ClearBoard();
+
         turnManager.Initialize(this, playerBoard, enemyBoard, player, monster, hand, enemyAI);
         player.Hand = hand;
-        
+
         Debug.Log("Game initialized successfully.");
     }
     
