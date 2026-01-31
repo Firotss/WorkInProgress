@@ -57,6 +57,9 @@ public class GameManager : MonoBehaviour
     public Hand PlayerHand => hand;
     public EnemyAI EnemyAI => enemyAI;
 
+    // Check if player can place more cards this turn
+    public bool CanPlaceCard() => CurrentState == GameState.PlayerTurn && cardsPlayedThisTurn < MAX_CARDS_PER_TURN;
+
     // Публичное свойство для InputHandler
     public CardVisual SelectedBoardCard => SelectedBoardCardForWithdraw;
     public CardVisual SelectedBoardCardForWithdraw { get; private set; }
@@ -184,11 +187,12 @@ public class GameManager : MonoBehaviour
         enemyBoard.SetDeck(deck);
         enemyAI.Initialize(enemyBoard, deck);
         playerBoard.ClearBoard();
-        enemyBoard.ClearBoard();
-        
+        if (enemyBoard != null)
+            enemyBoard.ClearBoard();
+
         turnManager.Initialize(this, playerBoard, enemyBoard, player, monster, hand, enemyAI);
         player.Hand = hand;
-        
+
         Debug.Log("Game initialized successfully.");
     }
     

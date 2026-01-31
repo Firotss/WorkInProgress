@@ -130,6 +130,7 @@ public class CardVisual : MonoBehaviour
     public void HandleClick()
     {
         if (IsOnBoard) return;
+        if (GameManager.Instance != null && !GameManager.Instance.CanPlaceCard()) return;
         if (ownerHand != null)
             ownerHand.SelectCard(this);
     }
