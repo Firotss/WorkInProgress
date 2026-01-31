@@ -73,7 +73,8 @@ public class InputHandler : MonoBehaviour
                 }
 
                 // Б. КАРТА В РУКЕ (Начинаем перетаскивать)
-                if (GameManager.Instance != null && GameManager.Instance.PlayerHand != null)
+                // Only allow picking up cards if player hasn't reached the placement limit
+                if (GameManager.Instance != null && GameManager.Instance.PlayerHand != null && GameManager.Instance.CanPlaceCard())
                 {
                     GameManager.Instance.PlayerHand.SelectCard(card);
 

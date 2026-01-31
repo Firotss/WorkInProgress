@@ -57,6 +57,9 @@ public class GameManager : MonoBehaviour
     public Hand PlayerHand => hand;
     public EnemyAI EnemyAI => enemyAI;
 
+    // Check if player can place more cards this turn
+    public bool CanPlaceCard() => CurrentState == GameState.PlayerTurn && cardsPlayedThisTurn < MAX_CARDS_PER_TURN;
+
     // Публичное свойство для InputHandler
     public CardVisual SelectedBoardCard => SelectedBoardCardForWithdraw;
     public CardVisual SelectedBoardCardForWithdraw { get; private set; }

@@ -106,6 +106,7 @@ public class CardVisual : MonoBehaviour
     public void HandleClick()
     {
         if (IsOnBoard) return;
+        if (GameManager.Instance != null && !GameManager.Instance.CanPlaceCard()) return;
         if (ownerHand != null)
             ownerHand.SelectCard(this);
     }
@@ -113,7 +114,11 @@ public class CardVisual : MonoBehaviour
     private void OnMouseEnter()
     {
         if (!IsOnBoard && !IsSelected && cardRenderer != null)
+        {
+            // Don't show hover effect if player can't place cards
+            if (GameManager.Instance != null && !GameManager.Instance.CanPlaceCard()) return;
             cardRenderer.material.color = originalColor * new Color(1.2f, 1.2f, 1.2f);
+        }
     }
 
     private void OnMouseExit()
