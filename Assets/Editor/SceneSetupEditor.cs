@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 
@@ -8,10 +9,16 @@ public class SceneSetupEditor : Editor
     [MenuItem("Tools/Setup Game Scene")]
     public static void SetupGameScene()
     {
+        if (Application.isPlaying)
+        {
+            Debug.LogWarning("Setup Game Scene cannot run during play mode. Stop Play first.");
+            return;
+        }
+
         Debug.Log("=== Setting up Game Scene ===");
-        
+
         ClearScene();
-        
+
         CreateGameController();
         CreateGameManager();
         CreatePlayer();
@@ -23,11 +30,12 @@ public class SceneSetupEditor : Editor
         CreateHand();
         CreateEnemyAI();
         CreateUI();
+        EnsureEventSystem();
         SetupCamera();
         SetupLighting();
-        
+
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        
+
         Debug.Log("=== Game Scene Setup Complete! Press Play to start. ===");
     }
 
@@ -237,10 +245,50 @@ public class SceneSetupEditor : Editor
         CreateText(canvasObj.transform, "HandCountText", "Hand: 6/10", new Vector2(800, -450), 20);
         CreateText(canvasObj.transform, "DeckCountText", "Deck: 20", new Vector2(800, -480), 20);
         
-        // Game End Panel
+        CreateStartPanel(canvasObj.transform);
         CreateGameEndPanel(canvasObj.transform);
-        
+
         Debug.Log("Created: UI Canvas");
+    }
+
+    private static void EnsureEventSystem()
+    {
+        if (Object.FindObjectOfType<EventSystem>() != null)
+            return;
+        GameObject eventSystemObj = new GameObject("EventSystem");
+        eventSystemObj.AddComponent<EventSystem>();
+        eventSystemObj.AddComponent<StandaloneInputModule>();
+    }
+
+    private static void CreateStartPanel(Transform parent)
+    {
+        GameObject panel = new GameObject("StartPanel");
+        panel.transform.SetParent(parent, false);
+
+        RectTransform rect = panel.AddComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        UnityEngine.UI.Image bg = panel.AddComponent<UnityEngine.UI.Image>();
+        bg.color = new Color(0.08f, 0.08f, 0.15f, 0.98f);
+
+        GameObject titleObj = CreateText(panel.transform, "StartTitle", "CARD GAME", new Vector2(0, 120), 64);
+        if (titleObj != null)
+            titleObj.GetComponent<RectTransform>().sizeDelta = new Vector2(600, 80);
+
+        CreateText(panel.transform, "StartSubtitle", "Defeat the masks", new Vector2(0, 20), 28);
+
+        GameObject playBtn = CreateButton(panel.transform, "StartButton", "PLAY", new Vector2(0, -120), new Vector2(280, 80));
+        if (playBtn != null)
+        {
+            var btnImg = playBtn.GetComponent<UnityEngine.UI.Image>();
+            if (btnImg != null)
+                btnImg.color = new Color(0.2f, 0.5f, 0.25f);
+        }
+
+        panel.SetActive(true);
     }
 
     private static GameObject CreateButton(Transform parent, string name, string text, 
@@ -314,9 +362,12 @@ public class SceneSetupEditor : Editor
         UnityEngine.UI.Image bg = panel.AddComponent<UnityEngine.UI.Image>();
         bg.color = new Color(0, 0, 0, 0.9f);
         
-        CreateText(panel.transform, "GameEndText", "GAME OVER", new Vector2(0, 50), 56);
-        CreateButton(panel.transform, "RestartButton", "RESTART", new Vector2(0, -100), new Vector2(250, 70));
-        
+        GameObject endTextObj = CreateText(panel.transform, "GameEndText", "GAME OVER", new Vector2(0, 80), 56);
+        if (endTextObj != null)
+            endTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(700, 100);
+        CreateText(panel.transform, "GameEndSubtext", "You were defeated!", new Vector2(0, 0), 28);
+        CreateButton(panel.transform, "RestartButton", "PLAY AGAIN", new Vector2(0, -120), new Vector2(280, 70));
+
         panel.SetActive(false);
     }
 

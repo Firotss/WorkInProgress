@@ -4,18 +4,23 @@ using System;
 public class GameManager : MonoBehaviour
 {
     #region Singleton
-    
+
     private static GameManager instance;
-    
+    private static bool applicationIsQuitting;
+
     public static GameManager Instance
     {
         get
         {
+            // Do not create or return instance during shutdown (avoids spawning GameManager from OnDestroy).
+            if (applicationIsQuitting)
+                return null;
+
             if (instance == null)
             {
                 instance = FindObjectOfType<GameManager>();
-                
-                if (instance == null)
+
+                if (instance == null && Application.isPlaying)
                 {
                     GameObject go = new GameObject("GameManager");
                     instance = go.AddComponent<GameManager>();
@@ -24,7 +29,7 @@ public class GameManager : MonoBehaviour
             return instance;
         }
     }
-    
+
     #endregion
 
     #region References
@@ -73,9 +78,21 @@ public class GameManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-        
+
         instance = this;
+        applicationIsQuitting = false;
         CurrentState = GameState.NotStarted;
+    }
+
+    private void OnApplicationQuit()
+    {
+        applicationIsQuitting = true;
+    }
+
+    private void OnDestroy()
+    {
+        if (instance == this)
+            instance = null;
     }
 
     private void Start()

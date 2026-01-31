@@ -9,6 +9,7 @@ public class Initiator : MonoBehaviour
 {
     [Header("Setup Options")]
     [SerializeField] private bool useAutoSetup = true;
+    [SerializeField] private bool autoStartGame = false;
     [SerializeField] private float startDelay = 0.5f;
     
     [Header("References (Optional - for manual setup)")]
@@ -38,13 +39,13 @@ public class Initiator : MonoBehaviour
                 gameObject.AddComponent<InputHandler>();
             }
             
-            // Game will start after setup completes
-            Invoke(nameof(StartGameDelayed), startDelay);
+            if (autoStartGame)
+                Invoke(nameof(StartGameDelayed), startDelay);
         }
         else
         {
-            // Manual setup - expect GameManager to already exist
-            StartGameDelayed();
+            if (autoStartGame)
+                StartGameDelayed();
         }
     }
 

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
 public class GameSetup : MonoBehaviour
@@ -224,9 +225,51 @@ public class GameSetup : MonoBehaviour
         CreateText(canvasObj.transform, "HandCountText", "Hand: 6/10", new Vector2(800, -450), 20);
         CreateText(canvasObj.transform, "DeckCountText", "Deck: 20", new Vector2(800, -480), 20);
         
+        CreateStartPanel(canvasObj.transform);
         CreateGameEndPanel(canvasObj.transform);
-        
+
         Debug.Log("Created: UI Canvas");
+    }
+
+    private void EnsureEventSystem()
+    {
+        if (FindObjectOfType<EventSystem>() != null)
+            return;
+        GameObject eventSystemObj = new GameObject("EventSystem");
+        eventSystemObj.AddComponent<EventSystem>();
+        eventSystemObj.AddComponent<StandaloneInputModule>();
+        Debug.Log("Created: EventSystem (required for UI button clicks)");
+    }
+
+    private void CreateStartPanel(Transform parent)
+    {
+        GameObject panel = new GameObject("StartPanel");
+        panel.transform.SetParent(parent, false);
+
+        RectTransform rect = panel.AddComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        Image bg = panel.AddComponent<Image>();
+        bg.color = new Color(0.08f, 0.08f, 0.15f, 0.98f);
+
+        GameObject titleObj = CreateText(panel.transform, "StartTitle", "CARD GAME", new Vector2(0, 120), 64);
+        if (titleObj != null)
+            titleObj.GetComponent<RectTransform>().sizeDelta = new Vector2(600, 80);
+
+        CreateText(panel.transform, "StartSubtitle", "Defeat the masks", new Vector2(0, 20), 28);
+
+        GameObject playBtn = CreateButton(panel.transform, "StartButton", "PLAY", new Vector2(0, -120), new Vector2(280, 80));
+        if (playBtn != null)
+        {
+            Image btnImg = playBtn.GetComponent<Image>();
+            if (btnImg != null)
+                btnImg.color = new Color(0.2f, 0.5f, 0.25f);
+        }
+
+        panel.SetActive(true);
     }
 
     private GameObject CreateButton(Transform parent, string name, string text, Vector2 position, Vector2 size)
@@ -293,9 +336,12 @@ public class GameSetup : MonoBehaviour
         Image bg = panel.AddComponent<Image>();
         bg.color = new Color(0, 0, 0, 0.9f);
         
-        CreateText(panel.transform, "GameEndText", "GAME OVER", new Vector2(0, 50), 56);
-        CreateButton(panel.transform, "RestartButton", "RESTART", new Vector2(0, -100), new Vector2(250, 70));
-        
+        GameObject endTextObj = CreateText(panel.transform, "GameEndText", "GAME OVER", new Vector2(0, 80), 56);
+        if (endTextObj != null)
+            endTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(700, 100);
+        CreateText(panel.transform, "GameEndSubtext", "You were defeated!", new Vector2(0, 0), 28);
+        CreateButton(panel.transform, "RestartButton", "PLAY AGAIN", new Vector2(0, -120), new Vector2(280, 70));
+
         panel.SetActive(false);
     }
 

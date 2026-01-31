@@ -23,9 +23,14 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI handCountText;
     [SerializeField] private TextMeshProUGUI deckCountText;
     
+    [Header("Start Screen")]
+    [SerializeField] private GameObject startPanel;
+    [SerializeField] private Button startButton;
+
     [Header("Game End Screen")]
     [SerializeField] private GameObject gameEndPanel;
     [SerializeField] private TextMeshProUGUI gameEndText;
+    [SerializeField] private TextMeshProUGUI gameEndSubtext;
     
     [Header("References")]
     [SerializeField] private Player player;
@@ -42,10 +47,11 @@ public class UIManager : MonoBehaviour
         SubscribeToEvents();
         
         if (gameEndPanel != null)
-        {
             gameEndPanel.SetActive(false);
-        }
-        
+
+        if (startPanel != null)
+            startPanel.SetActive(GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.NotStarted);
+
         UpdateAllUI();
     }
 
@@ -78,13 +84,25 @@ public class UIManager : MonoBehaviour
             deckCountText = FindTextByName("DeckCountText");
         if (gameEndText == null)
             gameEndText = FindTextByName("GameEndText");
-        
+        if (gameEndSubtext == null)
+            gameEndSubtext = FindTextByName("GameEndSubtext");
+        if (startPanel == null)
+        {
+            Transform p = transform.Find("StartPanel");
+            if (p != null)
+                startPanel = p.gameObject;
+        }
+        if (startButton == null)
+            startButton = FindButtonByName("StartButton");
+
         // Find buttons by name
         if (endTurnButton == null)
             endTurnButton = FindButtonByName("EndTurnButton");
         if (restartButton == null)
             restartButton = FindButtonByName("RestartButton");
-        
+        if (restartButton == null && gameEndPanel != null)
+            restartButton = gameEndPanel.GetComponentInChildren<Button>(true);
+
         if (gameEndPanel == null)
         {
             Transform panel = transform.Find("GameEndPanel");
@@ -132,6 +150,11 @@ public class UIManager : MonoBehaviour
         {
             restartButton.onClick.RemoveAllListeners();
             restartButton.onClick.AddListener(OnRestartClicked);
+        }
+        if (startButton != null)
+        {
+            startButton.onClick.RemoveAllListeners();
+            startButton.onClick.AddListener(OnStartClicked);
         }
     }
 
@@ -280,29 +303,30 @@ public class UIManager : MonoBehaviour
             GameManager.Instance.OnEndTurnClicked();
     }
 
+    private void OnStartClicked()
+    {
+        if (startPanel != null)
+            startPanel.SetActive(false);
+        if (GameManager.Instance != null)
+            GameManager.Instance.StartGame();
+    }
+
     private void OnRestartClicked()
     {
         if (gameEndPanel != null)
-        {
             gameEndPanel.SetActive(false);
-        }
-        
         if (GameManager.Instance != null)
-        {
             GameManager.Instance.RestartGame();
-        }
     }
 
     private void OnGameStateChanged(GameState newState)
     {
         UpdateGameStateUI();
-        
+        if (startPanel != null && newState != GameState.NotStarted)
+            startPanel.SetActive(false);
         bool isPlayerTurn = (newState == GameState.PlayerTurn);
-        
         if (endTurnButton != null)
-        {
             endTurnButton.interactable = isPlayerTurn;
-        }
     }
 
     private void OnMonsterDamaged(int currentHealth, int maxHealth)
@@ -336,28 +360,48 @@ public class UIManager : MonoBehaviour
         if (gameEndPanel != null)
         {
             gameEndPanel.SetActive(true);
+            Image panelBg = gameEndPanel.GetComponent<Image>();
+            if (panelBg != null)
+                panelBg.color = victory
+                    ? new Color(0.12f, 0.28f, 0.12f, 0.96f)
+                    : new Color(0.28f, 0.12f, 0.12f, 0.96f);
         }
-        
         if (gameEndText != null)
-        {
-            if (victory)
-            {
-                gameEndText.text = "VICTORY!\n\nAll masks destroyed!";
-            }
-            else
-            {
-                gameEndText.text = "GAME OVER\n\nYou were defeated!";
-            }
-        }
-        
+            gameEndText.text = victory ? "VICTORY!" : "GAME OVER";
+        if (gameEndSubtext != null)
+            gameEndSubtext.text = victory ? "All masks destroyed!" : "You were defeated!";
+        if (restartButton == null && gameEndPanel != null)
+            restartButton = gameEndPanel.GetComponentInChildren<Button>(true);
         if (restartButton != null)
         {
             restartButton.gameObject.SetActive(true);
+            restartButton.interactable = true;
+            restartButton.onClick.RemoveAllListeners();
+            restartButton.onClick.AddListener(OnRestartClicked);
         }
     }
 
     private void Update()
     {
         UpdatePlayerHealthUI();
+        if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.NotStarted)
+        {
+            if (startPanel == null)
+            {
+                Transform p = transform.Find("StartPanel");
+                if (p != null)
+                {
+                    startPanel = p.gameObject;
+                    startButton = startPanel.GetComponentInChildren<Button>(true);
+                    if (startButton != null)
+                    {
+                        startButton.onClick.RemoveAllListeners();
+                        startButton.onClick.AddListener(OnStartClicked);
+                    }
+                }
+            }
+            if (startPanel != null)
+                startPanel.SetActive(true);
+        }
     }
 }
