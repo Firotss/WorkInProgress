@@ -4,7 +4,12 @@ using System.Linq;
 
 public class CardCounter : MonoBehaviour
 {
+    public bool isEnemy = false;
+    
+    // Рука (ключи 0..4)
     public Dictionary<int, Card> handcards = new Dictionary<int, Card>();
+    
+    // Стол (ключи 0..8, где 0-2 это первый ряд)
     public Dictionary<int, Card> boardcards = new Dictionary<int, Card>(); 
 
     void Start()
@@ -14,84 +19,70 @@ public class CardCounter : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            Debug.Log("--- Filling cards... ---");
-            FillCards();
-        }
+        if (isEnemy) return;
 
-        if (Input.GetKeyDown(KeyCode.P))
-        {
-            PlayCardFromHandToBoard();
-        }
-
-        if (Input.GetKeyDown(KeyCode.B))
-        {
-            BurnCardFromBoard();
-        }
+        // Игрок выбирает, в какой слот положить карту (1, 2 или 3 на клавиатуре)
+        // Это соответствует индексам 0, 1, 2 на поле
+        if (Input.GetKeyDown(KeyCode.Alpha1)) PlayCardToLane(0);
+        if (Input.GetKeyDown(KeyCode.Alpha2)) PlayCardToLane(1);
+        if (Input.GetKeyDown(KeyCode.Alpha3)) PlayCardToLane(2);
     }
 
     public void FillCards()
     {
-        int maxHandCards = CountMaxHandCards();
-
+        int maxHandCards = 5; // Можно вернуть логику с пассивками позже
         while (handcards.Count < maxHandCards)
         {
             Card newCard = DeckManager.Instance.GetFirstCard();
-            
-            if (newCard == null) 
-            {
-                break;
-            }
+            if (newCard == null) break;
 
             int newIndex = 0;
             while (handcards.ContainsKey(newIndex)) newIndex++;
-
             handcards.Add(newIndex, newCard);
-            Debug.Log($"[ADD] Card added to hand: {newCard.name}. (Hand size: {handcards.Count}/{maxHandCards})");
         }
     }
 
-    public int CountMaxHandCards()
+    // Игрок кладет карту в конкретную линию (laneIndex = 0, 1 или 2)
+    public void PlayCardToLane(int laneIndex)
     {
-        int maxHandCards = 5;
-        foreach (var entry in boardcards)
+        // 1. Проверка: Есть ли место в этом слоте? (Мы можем класть только в начало - x=0)
+        if (boardcards.ContainsKey(laneIndex))
         {
-            if (entry.Value != null && entry.Value.GetCardAbility() == "max hand increase")
-            {
-                maxHandCards += 1;
-            }
+            Debug.Log("Этот слот уже занят!");
+            return;
         }
-        return maxHandCards;
-    }
 
-    private void PlayCardFromHandToBoard()
-    {
+        // 2. Проверка: Есть ли карты в руке?
         if (handcards.Count == 0) return;
 
-        int handKey = handcards.Keys.First(); 
+        // Берем первую карту из руки (для простоты)
+        int handKey = handcards.Keys.First();
         Card cardToPlay = handcards[handKey];
 
-        int boardKey = 0;
-        while (boardcards.ContainsKey(boardKey)) boardKey++;
+        // 3. Перемещаем
+        boardcards.Add(laneIndex, cardToPlay);
+        handcards.Remove(handKey);
 
-        boardcards.Add(boardKey, cardToPlay); 
-        handcards.Remove(handKey);            
-
-        Debug.Log($"[PLAY] Card {cardToPlay.name} played to board (board key: {boardKey}).");
+        Debug.Log($"{(isEnemy ? "Враг" : "Игрок")} поставил {cardToPlay.name} на линию {laneIndex + 1}");
     }
 
-    private void BurnCardFromBoard()
+    // --- ЛОГИКА ВРАГА ---
+    public void EnemyAutoTurn()
     {
-        if (boardcards.Count == 0) return;
+        // Враг тупой: пытается заполнить все 3 стартовых слота (0, 1, 2)
+        // но не больше 3 карт за ход
+        int cardsPlayed = 0;
 
-        int boardKey = boardcards.Keys.First();
-        Card cardToBurn = boardcards[boardKey];
+        for (int i = 0; i < 3; i++) // Проходим по слотам 0, 1, 2
+        {
+            if (cardsPlayed >= 3) break; // Лимит хода
 
-        DeckManager.Instance.AddToDiscard(cardToBurn);
-
-        boardcards.Remove(boardKey);
-
-        Debug.Log($"[BURN] Card {cardToBurn.name} burned.");
+            // Если слот свободен
+            if (!boardcards.ContainsKey(i))
+            {
+                PlayCardToLane(i);
+                cardsPlayed++;
+            }
+        }
     }
 }
