@@ -165,11 +165,9 @@ public class InputHandler : MonoBehaviour
                 BoardManager board = GameManager.Instance.Board;
                 if (board != null)
                 {
-                    int column = board.GetColumnFromWorldPosition(hit.point);
-                    
-                    // Try to place the card. 
-                    // GameManager checks logic (is turn valid? is slot free? card limit reached?)
-                    GameManager.Instance.TryPlaceCardInColumn(column);
+                    int column = board.GetNearestEmptyColumn(hit.point);
+                    if (column >= 0)
+                        GameManager.Instance.TryPlaceCardInColumn(column);
                     
                     // Check if placement was successful by checking card state
                     if (draggingCard.IsOnBoard) 
