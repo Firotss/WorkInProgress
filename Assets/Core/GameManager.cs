@@ -1,5 +1,7 @@
 using UnityEngine;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
@@ -379,6 +381,85 @@ public class GameManager : MonoBehaviour
 
     public void OnMonsterDefeated()
     {
+        StartCoroutine(FinalBossCutsceneCoroutine());
+    }
+    private IEnumerator FinalBossCutsceneCoroutine()
+    {
+        MonsterVisual monsterVisual = monster != null ? monster.GetComponent<MonsterVisual>() : null;
+        if (monsterVisual != null)
+        {
+            bool defeatDone = false;
+            void OnDefeatDone() => defeatDone = true;
+            monsterVisual.OnDefeatAnimationComplete += OnDefeatDone;
+            while (!defeatDone)
+                yield return null;
+            monsterVisual.OnDefeatAnimationComplete -= OnDefeatDone;
+        }
+        else
+        {
+            yield return new WaitForSeconds(3f);
+        }
+
+        DialogueManager dialogueManager = FindObjectOfType<DialogueManager>(true);
+        if (dialogueManager == null)
+        {
+            Debug.LogWarning("GameManager: DialogueManager not found; skipping final cutscene.");
+            SetGameState(GameState.Victory);
+            yield break;
+        }
+
+        // "Noooo" from the monster
+        var nooooLine = new List<DialogueManager.DialogueLine>
+        {
+            new DialogueManager.DialogueLine("Monster", "Noooo", false)
+        };
+        bool dialogueDone = false;
+        void OnDialogueDone() => dialogueDone = true;
+        dialogueManager.OnDialogueCompleted += OnDialogueDone;
+        dialogueManager.StartDialogueWithLines(nooooLine);
+        while (!dialogueDone)
+            yield return null;
+        dialogueManager.OnDialogueCompleted -= OnDialogueDone;
+
+        yield return new WaitForSeconds(1.5f);
+
+        if (uiManager != null)
+        {
+            float fadeDuration = uiManager.ScreenFadeToBlackDuration;
+            yield return uiManager.StartCoroutine(uiManager.FadeToBlack(fadeDuration));
+            uiManager.ShowFinalBossImage(true);
+        }
+        else
+        {
+            yield return new WaitForSeconds(1.2f);
+        }
+
+        var finalLines = new List<DialogueManager.DialogueLine>
+        {
+            new DialogueManager.DialogueLine("Player", "That power... it came from the bathrobe. Give it to me!", true),
+            new DialogueManager.DialogueLine("Unmasked Alex",
+                "You think you are worthy? You are nothing. I will NEVER give it to you.", false),
+            new DialogueManager.DialogueLine("Player", "If I won't have it, then no one will!", true),
+            new DialogueManager.DialogueLine("Unmasked Alex",
+                "Fool. You dare threaten me? With a single spell the entity blasts you back. BEGONE FROM MY DOMAIN!", false)
+        };
+
+        dialogueDone = false;
+        dialogueManager.OnDialogueCompleted += OnDialogueDone;
+        dialogueManager.StartDialogueWithLines(finalLines);
+
+        float timeout = 120f;
+        float waited = 0f;
+        while (!dialogueDone && waited < timeout)
+        {
+            waited += Time.deltaTime;
+            yield return null;
+        }
+        dialogueManager.OnDialogueCompleted -= OnDialogueDone;
+
+        if (uiManager != null)
+            uiManager.ShowFinalBossImage(false);
+
         SetGameState(GameState.Victory);
     }
 

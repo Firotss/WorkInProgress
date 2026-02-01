@@ -52,15 +52,44 @@ public class DialogueManager : MonoBehaviour
     {
         dialogueLines.Clear();
 
-        dialogueLines.Add(new DialogueLine("Player", "What...What happened where am I and who are you", true));
-        dialogueLines.Add(new DialogueLine("Masked Entity", "You will never know who I am or why you are here", false));
-        dialogueLines.Add(new DialogueLine("Player", "Stop hiding behind that mask and tell me who you are or I will see it for myself", true));
-        dialogueLines.Add(new DialogueLine("Masked Entity", "I would like to see you try", false));
+        dialogueLines.Add(new DialogueLine("Player", "Where... where am I? Who are you? Put down that mask!", true));
+        dialogueLines.Add(new DialogueLine("Masked Entity", "You dare demand anything of me? You are nothing. You will learn your place.", false));
+        dialogueLines.Add(new DialogueLine("Player", "Tell me who you are—take off that mask!", true));
+        dialogueLines.Add(new DialogueLine("Masked Entity", "I would like to see you try. Now fight—or perish where you stand.", false));
     }
 
     public void StartDialogue()
     {
-        // Try to find references if not set
+        // Re-initialize default dialogue lines if empty
+        if (dialogueLines.Count == 0)
+        {
+            InitializeDialogue();
+        }
+        StartDialogueInternal();
+    }
+
+    /// <summary>
+    /// Starts dialogue with a custom list of lines (e.g. "Noooo" or final boss lines).
+    /// </summary>
+    /// <param name="lines">Dialogue lines to show.</param>
+    public void StartDialogueWithLines(List<DialogueLine> lines)
+    {
+        if (lines == null || lines.Count == 0)
+        {
+            Debug.LogWarning("DialogueManager: StartDialogueWithLines called with no lines.");
+            OnDialogueCompleted?.Invoke();
+            return;
+        }
+        dialogueLines.Clear();
+        dialogueLines.AddRange(lines);
+        StartDialogueInternal();
+    }
+
+    /// <summary>
+    /// Shared logic to show panel and first line. Assumes dialogueLines is already set.
+    /// </summary>
+    private void StartDialogueInternal()
+    {
         if (dialoguePanel == null)
         {
             FindReferences();
@@ -77,12 +106,6 @@ public class DialogueManager : MonoBehaviour
         dialoguePanel.SetActive(true);
         dialoguePanel.transform.SetAsLastSibling();
         currentLineIndex = 0;
-
-        // Re-initialize dialogue lines if empty
-        if (dialogueLines.Count == 0)
-        {
-            InitializeDialogue();
-        }
 
         EnsureButtonListener();
         ShowCurrentLine();

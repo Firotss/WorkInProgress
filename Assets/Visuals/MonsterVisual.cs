@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using System.Collections;
 
 /// <summary>
@@ -7,6 +8,11 @@ using System.Collections;
 /// </summary>
 public class MonsterVisual : MonoBehaviour
 {
+    /// <summary>
+    /// Fired when the defeat animation (vibration/flash/fade) finishes.
+    /// Used to chain into the final boss cutscene.
+    /// </summary>
+    public event Action OnDefeatAnimationComplete;
     [Header("References")]
     [SerializeField] private Monster monster;
     
@@ -171,8 +177,8 @@ public class MonsterVisual : MonoBehaviour
             
             // Shake position
             Vector3 shakeOffset = new Vector3(
-                Random.Range(-shakeIntensity, shakeIntensity),
-                Random.Range(-shakeIntensity, shakeIntensity),
+                UnityEngine.Random.Range(-shakeIntensity, shakeIntensity),
+                UnityEngine.Random.Range(-shakeIntensity, shakeIntensity),
                 0
             );
             transform.position = originalPosition + shakeOffset * (1 - t);
@@ -189,42 +195,49 @@ public class MonsterVisual : MonoBehaviour
     }
 
     /// <summary>
-    /// Coroutine for defeat effect.
+    /// Coroutine for defeat effect (longer vibration/flash and fade for final stage).
     /// </summary>
     private IEnumerator DefeatCoroutine()
     {
-        if (monsterRenderer == null) yield break;
-        
-        // Flash rapidly
-        for (int i = 0; i < 5; i++)
+        if (monsterRenderer == null)
+        {
+            OnDefeatAnimationComplete?.Invoke();
+            yield break;
+        }
+
+        // Longer rapid flash (vibration feel)
+        const int flashCount = 10;
+        const float flashInterval = 0.12f;
+        for (int i = 0; i < flashCount; i++)
         {
             monsterRenderer.sprite = damageFlashColor;
             yield return new WaitForSeconds(0.1f);
             monsterRenderer.sprite = currentStageColor;
             yield return new WaitForSeconds(0.1f);
         }
-        
-        // Fade out
-        float fadeDuration = 1f;
+
+        // Fade out (longer)
+        float fadeDuration = 1.8f;
         float elapsed = 0f;
         Color startColor = monsterRenderer.material.color;
-        
+
         while (elapsed < fadeDuration)
         {
             elapsed += Time.deltaTime;
             float t = elapsed / fadeDuration;
-            
+
             Color fadeColor = startColor;
             fadeColor.a = 1 - t;
             monsterRenderer.material.color = fadeColor;
-            
+
             // Shrink
             transform.localScale = Vector3.one * (1 - t * 0.5f);
-            
+
             yield return null;
         }
-        
+
         Debug.Log("Monster defeat animation complete");
+        OnDefeatAnimationComplete?.Invoke();
     }
 
     /// <summary>

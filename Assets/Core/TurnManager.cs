@@ -9,6 +9,12 @@ public class TurnManager : MonoBehaviour
     [SerializeField] private float turnProcessingDelay = 0.5f;
     [SerializeField] private int basePlacementsPerTurn = 3;
 
+    [Header("Stage Change Dialogue")]
+    [SerializeField] private string stage2Dialogue = "That power... I've felt it before. It wasn't their own—it came from something they had.";
+    [SerializeField] private string stage3Dialogue = "Yes. You remember. You lost to me once. That is why you woke here—in this desolate place.";
+    [SerializeField] private string stage2DialogueSpeaker = "Player";
+    [SerializeField] private string stage3DialogueSpeaker = "Masked Entity";
+
     public int CurrentTurn { get; private set; }
     public int CurrentRound { get; private set; }
     public int PlacementsThisTurn { get; private set; }
@@ -120,13 +126,31 @@ public class TurnManager : MonoBehaviour
 
         if (monster.IsDefeated)
         {
-            gameManager.SetGameState(GameState.Victory);
+            // Victory is handled by GameManager.OnMonsterDefeated() and the final boss cutscene.
             yield break;
         }
 
-        // Check if monster stage changed (round change)
+        // If monster stage changed, show one-line dialogue and wait for player to dismiss
         if (monster.CurrentStage > CurrentRound)
         {
+            DialogueManager dialogueManager = UnityEngine.Object.FindObjectOfType<DialogueManager>(true);
+            if (dialogueManager != null)
+            {
+                string lineText = monster.CurrentStage == 2 ? stage2Dialogue : stage3Dialogue;
+                string speaker = monster.CurrentStage == 2 ? stage2DialogueSpeaker : stage3DialogueSpeaker;
+                bool isPlayer = monster.CurrentStage == 2;
+                var lines = new List<DialogueManager.DialogueLine>
+                {
+                    new DialogueManager.DialogueLine(speaker, lineText, isPlayer)
+                };
+                bool dialogueDone = false;
+                void OnStageDialogueDone() => dialogueDone = true;
+                dialogueManager.OnDialogueCompleted += OnStageDialogueDone;
+                dialogueManager.StartDialogueWithLines(lines);
+                while (!dialogueDone)
+                    yield return null;
+                dialogueManager.OnDialogueCompleted -= OnStageDialogueDone;
+            }
             CurrentRound = monster.CurrentStage;
             OnRoundChanged?.Invoke(CurrentRound);
         }

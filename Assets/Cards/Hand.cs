@@ -63,7 +63,7 @@ public class Hand : MonoBehaviour
 
     public void DrawInitialCards()
     {
-        FillCards();
+        DrawCards(Mathf.Min(initialDrawCount, CountMaxHandCards()));
     }
 
     public void DrawTurnCards()

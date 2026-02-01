@@ -30,6 +30,11 @@ public class UIManager : MonoBehaviour
     [Header("Start Screen")]
     [SerializeField] private GameObject startPanel;
     [SerializeField] private Button startButton;
+    [SerializeField] private Button introductionButton;
+
+    [Header("Introduction")]
+    [TextArea(4, 14)]
+    [SerializeField] private string introductionText = "You come to your senses in an unknown, desolate place—face to face with a masked entity. You demand to know who they are and ask them to remove the mask; they refuse with harsh, condescending scorn.\n\nIn combat, memories return: you once fought an all-powerful being whose strength did not belong to them but to a mysterious item they possessed. In time, you uncover the truth—the masked figure is that same foe who defeated you. That is why you awoke here.\n\nYou seek the bathrobe to claim that power for yourself, but the entity deflects you with a devastating spell...\n\nThis is a card game with three card types—Damage, Defense and Ability. Hover on cards to learn more. Combine them wisely for bonuses. Can you unravel who is behind the mask?";
 
     [Header("Game End Screen")]
     [SerializeField] private GameObject gameEndPanel;
@@ -51,6 +56,28 @@ public class UIManager : MonoBehaviour
     [Header("Simple Preview")]
     [SerializeField] private GameObject previewPanel; // Сама панель
     [SerializeField] private RawImage previewImage;   // Компонент RawImage на этой панели
+
+    [Header("Final Boss Cutscene")]
+    [SerializeField] private float screenFadeToBlackDuration = 1.2f;
+
+    [Header("End Credits")]
+    [SerializeField] private float creditsDisplayDuration = 5f;
+    [SerializeField] private float creditsSlideDuration = 1.2f;
+    [SerializeField] private float creditsLineSpacing = 48f;
+    [SerializeField] private float creditsStartOffsetY = 400f;
+
+    /// <summary>Duration used for fade-to-black in the final cutscene (configurable in Inspector).</summary>
+    public float ScreenFadeToBlackDuration => screenFadeToBlackDuration;
+
+    private GameObject blackOverlayPanel;
+    private Image blackOverlayImage;
+    private GameObject finalBossImagePanel;
+    private Image finalBossImage;
+    private RawImage finalBossRawImage;
+    private GameObject creditsPanel;
+    private RectTransform creditsContainerRect;
+    private Coroutine creditsRedirectCoroutine;
+    private GameObject introductionPanel;
 
     private void Awake()
     {
@@ -132,6 +159,8 @@ public class UIManager : MonoBehaviour
         }
         if (startButton == null)
             startButton = FindButtonByName("StartButton");
+        if (introductionButton == null)
+            introductionButton = FindButtonByName("IntroductionButton");
 
         // Find buttons by name
         if (endTurnButton == null)
@@ -160,6 +189,43 @@ public class UIManager : MonoBehaviour
             if (dialogueManager == null)
                 dialogueManager = FindObjectOfType<DialogueManager>(true);
         }
+
+        EnsureIntroductionButton();
+    }
+
+    /// <summary>
+    /// Creates the Introduction button on the start panel if missing.
+    /// </summary>
+    private void EnsureIntroductionButton()
+    {
+        if (introductionButton != null || startPanel == null) return;
+
+        GameObject btnObj = new GameObject("IntroductionButton");
+        btnObj.transform.SetParent(startPanel.transform, false);
+        RectTransform btnRect = btnObj.AddComponent<RectTransform>();
+        btnRect.anchorMin = new Vector2(0.5f, 0.5f);
+        btnRect.anchorMax = new Vector2(0.5f, 0.5f);
+        btnRect.pivot = new Vector2(0.5f, 0.5f);
+        btnRect.anchoredPosition = new Vector2(0f, -220f);
+        btnRect.sizeDelta = new Vector2(280f, 56f);
+
+        Image btnImg = btnObj.AddComponent<Image>();
+        btnImg.color = new Color(0.25f, 0.2f, 0.35f, 0.95f);
+        introductionButton = btnObj.AddComponent<Button>();
+
+        GameObject textObj = new GameObject("Text");
+        textObj.transform.SetParent(btnObj.transform, false);
+        RectTransform textRect = textObj.AddComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
+        TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
+        tmp.text = "Introduction";
+        tmp.fontSize = 28;
+        tmp.color = Color.white;
+        tmp.alignment = TMPro.TextAlignmentOptions.Center;
+        tmp.raycastTarget = false;
     }
 
     private TextMeshProUGUI CreateComboStatusText()
@@ -227,6 +293,11 @@ public class UIManager : MonoBehaviour
         {
             startButton.onClick.RemoveAllListeners();
             startButton.onClick.AddListener(OnStartClicked);
+        }
+        if (introductionButton != null)
+        {
+            introductionButton.onClick.RemoveAllListeners();
+            introductionButton.onClick.AddListener(OnIntroductionClicked);
         }
     }
 
@@ -432,6 +503,100 @@ public class UIManager : MonoBehaviour
         StartCoroutine(ShowDialogueAfterPlayLoad());
     }
 
+    private void OnIntroductionClicked()
+    {
+        EnsureIntroductionPanel();
+        if (introductionPanel != null)
+        {
+            introductionPanel.SetActive(true);
+            introductionPanel.transform.SetAsLastSibling();
+        }
+    }
+
+    private void OnIntroductionCloseClicked()
+    {
+        if (introductionPanel != null)
+            introductionPanel.SetActive(false);
+    }
+
+    /// <summary>
+    /// Ensures the introduction panel exists (created at runtime if needed).
+    /// Shows the game explanation text and a Close button.
+    /// </summary>
+    private void EnsureIntroductionPanel()
+    {
+        if (introductionPanel != null) return;
+
+        introductionPanel = new GameObject("IntroductionPanel");
+        introductionPanel.transform.SetParent(transform, false);
+
+        RectTransform panelRect = introductionPanel.AddComponent<RectTransform>();
+        panelRect.anchorMin = Vector2.zero;
+        panelRect.anchorMax = Vector2.one;
+        panelRect.offsetMin = Vector2.zero;
+        panelRect.offsetMax = Vector2.zero;
+
+        Image bg = introductionPanel.AddComponent<Image>();
+        bg.color = new Color(0.04f, 0.04f, 0.1f, 0.94f);
+        bg.raycastTarget = true;
+
+        GameObject contentObj = new GameObject("Content");
+        contentObj.transform.SetParent(introductionPanel.transform, false);
+        RectTransform contentRect = contentObj.AddComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0.1f, 0.15f);
+        contentRect.anchorMax = new Vector2(0.9f, 0.85f);
+        contentRect.offsetMin = Vector2.zero;
+        contentRect.offsetMax = Vector2.zero;
+
+        GameObject textObj = new GameObject("IntroductionText");
+        textObj.transform.SetParent(contentObj.transform, false);
+        RectTransform textRect = textObj.AddComponent<RectTransform>();
+        textRect.anchorMin = new Vector2(0f, 0.2f);
+        textRect.anchorMax = new Vector2(1f, 1f);
+        textRect.offsetMin = new Vector2(24f, 24f);
+        textRect.offsetMax = new Vector2(-24f, -80f);
+
+        TextMeshProUGUI introText = textObj.AddComponent<TextMeshProUGUI>();
+        introText.text = string.IsNullOrEmpty(introductionText)
+            ? "You come to your senses in an unknown, desolate place—face to face with a masked entity. You demand to know who they are and ask them to remove the mask; they refuse with harsh, condescending scorn. In combat, memories return: you once fought an all-powerful being whose strength did not belong to them but to a mysterious item they possessed. In time, you uncover the truth—the masked figure is that same foe who defeated you. That is why you awoke here. You seek the bathrobe to claim that power for yourself, but the entity deflects you with a devastating spell... This is a card game with three card types—Damage, Defense and Ability. Hover on cards to learn more. Combine them wisely for bonuses."
+            : introductionText;
+        introText.fontSize = 32;
+        introText.color = new Color(0.95f, 0.93f, 0.9f, 1f);
+        introText.alignment = TMPro.TextAlignmentOptions.TopLeft;
+        introText.enableWordWrapping = true;
+        introText.raycastTarget = false;
+
+        GameObject closeBtnObj = new GameObject("CloseButton");
+        closeBtnObj.transform.SetParent(contentObj.transform, false);
+        RectTransform closeBtnRect = closeBtnObj.AddComponent<RectTransform>();
+        closeBtnRect.anchorMin = new Vector2(0.5f, 0f);
+        closeBtnRect.anchorMax = new Vector2(0.5f, 0f);
+        closeBtnRect.pivot = new Vector2(0.5f, 0f);
+        closeBtnRect.anchoredPosition = new Vector2(0f, 20f);
+        closeBtnRect.sizeDelta = new Vector2(200f, 52f);
+
+        Image closeBtnImg = closeBtnObj.AddComponent<Image>();
+        closeBtnImg.color = new Color(0.3f, 0.25f, 0.4f, 0.98f);
+        Button closeBtn = closeBtnObj.AddComponent<Button>();
+        closeBtn.onClick.AddListener(OnIntroductionCloseClicked);
+
+        GameObject closeTextObj = new GameObject("Text");
+        closeTextObj.transform.SetParent(closeBtnObj.transform, false);
+        RectTransform closeTextRect = closeTextObj.AddComponent<RectTransform>();
+        closeTextRect.anchorMin = Vector2.zero;
+        closeTextRect.anchorMax = Vector2.one;
+        closeTextRect.offsetMin = Vector2.zero;
+        closeTextRect.offsetMax = Vector2.zero;
+        TextMeshProUGUI closeTmp = closeTextObj.AddComponent<TextMeshProUGUI>();
+        closeTmp.text = "Close";
+        closeTmp.fontSize = 26;
+        closeTmp.color = Color.white;
+        closeTmp.alignment = TMPro.TextAlignmentOptions.Center;
+        closeTmp.raycastTarget = false;
+
+        introductionPanel.SetActive(false);
+    }
+
     /// <summary>
     /// Hides start panel, starts the game scene, then shows the dialogue on top.
     /// </summary>
@@ -486,6 +651,229 @@ public class UIManager : MonoBehaviour
 
     private void OnRestartClicked()
     {
+        if (creditsRedirectCoroutine != null)
+        {
+            StopCoroutine(creditsRedirectCoroutine);
+            creditsRedirectCoroutine = null;
+        }
+        if (creditsPanel != null)
+            creditsPanel.SetActive(false);
+        if (gameEndPanel != null)
+            gameEndPanel.SetActive(false);
+        if (GameManager.Instance != null)
+            GameManager.Instance.RestartGame();
+    }
+
+    /// <summary>
+    /// Ensures the fullscreen black overlay exists (created at runtime if needed).
+    /// </summary>
+    private void EnsureBlackOverlay()
+    {
+        if (blackOverlayPanel != null) return;
+
+        blackOverlayPanel = new GameObject("BlackOverlay");
+        blackOverlayPanel.transform.SetParent(transform, false);
+
+        RectTransform rect = blackOverlayPanel.AddComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        rect.SetAsLastSibling();
+
+        blackOverlayImage = blackOverlayPanel.AddComponent<Image>();
+        blackOverlayImage.color = new Color(0f, 0f, 0f, 0f);
+        blackOverlayImage.raycastTarget = false;
+
+        blackOverlayPanel.SetActive(false);
+    }
+
+    /// <summary>
+    /// Fades the screen to black over the given duration. Creates overlay if needed.
+    /// </summary>
+    /// <param name="duration">Fade duration in seconds.</param>
+    public IEnumerator FadeToBlack(float duration)
+    {
+        EnsureBlackOverlay();
+        blackOverlayPanel.SetActive(true);
+        blackOverlayPanel.transform.SetAsLastSibling();
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            blackOverlayImage.color = new Color(0f, 0f, 0f, t);
+            yield return null;
+        }
+        blackOverlayImage.color = new Color(0f, 0f, 0f, 1f);
+    }
+
+    /// <summary>
+    /// Ensures the Final Boss unmasked image panel exists (created at runtime if needed).
+    /// Tries Sprite first, then Texture2D so it works regardless of import settings.
+    /// </summary>
+    private void EnsureFinalBossImagePanel()
+    {
+        if (finalBossImagePanel != null) return;
+
+        Sprite sprite = Resources.Load<Sprite>("FinalBoss/FinalBossUnmasked");
+        Texture2D texture = Resources.Load<Texture2D>("FinalBoss/FinalBossUnmasked");
+
+        if (sprite == null && texture == null)
+        {
+            Debug.LogWarning("UIManager: FinalBoss/FinalBossUnmasked not found in Resources (tried Sprite and Texture2D).");
+            return;
+        }
+
+        finalBossImagePanel = new GameObject("FinalBossImagePanel");
+        finalBossImagePanel.transform.SetParent(transform, false);
+
+        RectTransform rect = finalBossImagePanel.AddComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        if (sprite != null)
+        {
+            finalBossImage = finalBossImagePanel.AddComponent<Image>();
+            finalBossImage.sprite = sprite;
+            finalBossImage.preserveAspect = true;
+            finalBossImage.color = Color.white;
+            finalBossImage.raycastTarget = false;
+        }
+        else
+        {
+            finalBossRawImage = finalBossImagePanel.AddComponent<RawImage>();
+            finalBossRawImage.texture = texture;
+            finalBossRawImage.color = Color.white;
+            finalBossRawImage.raycastTarget = false;
+            finalBossRawImage.uvRect = new Rect(0, 0, 1, 1);
+        }
+
+        finalBossImagePanel.SetActive(false);
+    }
+
+    /// <summary>
+    /// Shows or hides the Final Boss unmasked image (on top of black screen).
+    /// Brings panel to front when showing so it appears above the black overlay.
+    /// </summary>
+    public void ShowFinalBossImage(bool show)
+    {
+        EnsureFinalBossImagePanel();
+        if (finalBossImagePanel != null)
+        {
+            finalBossImagePanel.SetActive(show);
+            if (show)
+                finalBossImagePanel.transform.SetAsLastSibling();
+        }
+    }
+
+    /// <summary>
+    /// Ensures the end credits panel exists (created at runtime if needed).
+    /// Credits are separate lines with spacing, in a container that animates from top to center.
+    /// </summary>
+    private void EnsureCreditsPanel()
+    {
+        if (creditsPanel != null) return;
+
+        creditsPanel = new GameObject("CreditsPanel");
+        creditsPanel.transform.SetParent(transform, false);
+
+        RectTransform panelRect = creditsPanel.AddComponent<RectTransform>();
+        panelRect.anchorMin = Vector2.zero;
+        panelRect.anchorMax = Vector2.one;
+        panelRect.offsetMin = Vector2.zero;
+        panelRect.offsetMax = Vector2.zero;
+
+        Image bg = creditsPanel.AddComponent<Image>();
+        bg.color = new Color(0.05f, 0.05f, 0.12f, 0.92f);
+        bg.raycastTarget = false;
+
+        GameObject containerObj = new GameObject("CreditsContainer");
+        containerObj.transform.SetParent(creditsPanel.transform, false);
+        creditsContainerRect = containerObj.AddComponent<RectTransform>();
+        creditsContainerRect.anchorMin = new Vector2(0.5f, 0.5f);
+        creditsContainerRect.anchorMax = new Vector2(0.5f, 0.5f);
+        creditsContainerRect.pivot = new Vector2(0.5f, 0.5f);
+        creditsContainerRect.sizeDelta = new Vector2(700f, 220f);
+        creditsContainerRect.anchoredPosition = new Vector2(0f, creditsStartOffsetY);
+
+        string[] lines = new[]
+        {
+            "Developers: Branimir and Sofia",
+            "Designers: Ivan and Vladislav",
+            "Music: Ivan"
+        };
+        float currentY = 0f;
+        for (int i = 0; i < lines.Length; i++)
+        {
+            GameObject lineObj = new GameObject("CreditsLine_" + i);
+            lineObj.transform.SetParent(creditsContainerRect, false);
+            RectTransform lineRect = lineObj.AddComponent<RectTransform>();
+            lineRect.anchorMin = new Vector2(0.5f, 1f);
+            lineRect.anchorMax = new Vector2(0.5f, 1f);
+            lineRect.pivot = new Vector2(0.5f, 1f);
+            lineRect.anchoredPosition = new Vector2(0f, currentY);
+            lineRect.sizeDelta = new Vector2(650f, 52f);
+
+            TextMeshProUGUI lineText = lineObj.AddComponent<TextMeshProUGUI>();
+            lineText.text = lines[i];
+            lineText.fontSize = 42;
+            lineText.color = Color.white;
+            lineText.alignment = TMPro.TextAlignmentOptions.Center;
+            lineText.enableWordWrapping = true;
+            lineText.raycastTarget = false;
+
+            currentY -= (52f + creditsLineSpacing);
+        }
+
+        creditsPanel.SetActive(false);
+    }
+
+    /// <summary>
+    /// Shows the end credits panel, runs the slide-in animation, then starts the redirect timer.
+    /// </summary>
+    private void ShowCreditsAndScheduleRedirect()
+    {
+        EnsureCreditsPanel();
+        if (creditsPanel != null)
+        {
+            creditsPanel.SetActive(true);
+            creditsPanel.transform.SetAsLastSibling();
+            if (creditsContainerRect != null)
+                creditsContainerRect.anchoredPosition = new Vector2(0f, creditsStartOffsetY);
+        }
+        if (creditsRedirectCoroutine != null)
+            StopCoroutine(creditsRedirectCoroutine);
+        creditsRedirectCoroutine = StartCoroutine(CreditsAnimationAndRedirectCoroutine());
+    }
+
+    private IEnumerator CreditsAnimationAndRedirectCoroutine()
+    {
+        if (creditsContainerRect != null)
+        {
+            float elapsed = 0f;
+            float startY = creditsStartOffsetY;
+            Vector2 startPos = new Vector2(0f, startY);
+            Vector2 endPos = new Vector2(0f, 0f);
+
+            while (elapsed < creditsSlideDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / creditsSlideDuration);
+                float eased = 1f - (1f - t) * (1f - t);
+                creditsContainerRect.anchoredPosition = Vector2.Lerp(startPos, endPos, eased);
+                yield return null;
+            }
+            creditsContainerRect.anchoredPosition = endPos;
+        }
+
+        yield return new WaitForSeconds(creditsDisplayDuration);
+        creditsRedirectCoroutine = null;
+        if (creditsPanel != null)
+            creditsPanel.SetActive(false);
         if (gameEndPanel != null)
             gameEndPanel.SetActive(false);
         if (GameManager.Instance != null)
@@ -551,6 +939,11 @@ public class UIManager : MonoBehaviour
             restartButton.interactable = true;
             restartButton.onClick.RemoveAllListeners();
             restartButton.onClick.AddListener(OnRestartClicked);
+        }
+
+        if (victory)
+        {
+            ShowCreditsAndScheduleRedirect();
         }
     }
 
