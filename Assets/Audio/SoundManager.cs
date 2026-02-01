@@ -11,7 +11,13 @@ public class SoundManager : MonoBehaviour
     [SerializeField] private AudioClip shuffle;
     [SerializeField] private AudioClip endTurn;
 
+    [Header("Background Music")]
+    [SerializeField] private AudioClip backgroundMusic;
+    [Range(0f, 1f)]
+    [SerializeField] private float backgroundMusicVolume = 0.6f;
+
     private AudioSource source;
+    private AudioSource musicSource;
     private static readonly Dictionary<string, AudioClip> Cache = new Dictionary<string, AudioClip>();
     private static bool loggedMissing;
 
@@ -29,6 +35,14 @@ public class SoundManager : MonoBehaviour
         source.playOnAwake = false;
         source.volume = 1f;
         source.mute = false;
+
+        GameObject musicObj = new GameObject("MusicSource");
+        musicObj.transform.SetParent(transform);
+        musicSource = musicObj.AddComponent<AudioSource>();
+        musicSource.playOnAwake = false;
+        musicSource.loop = true;
+        musicSource.volume = backgroundMusicVolume;
+        musicSource.mute = false;
     }
 
     private void OnDestroy()
@@ -81,5 +95,27 @@ public class SoundManager : MonoBehaviour
     public void PlayEndTurn()
     {
         Play(GetClip("End_Turn", endTurn), "End_Turn");
+    }
+
+    public void PlayBackgroundMusic()
+    {
+        if (musicSource == null) return;
+        AudioClip clip = backgroundMusic != null ? backgroundMusic : GetClip("Background_Music", null);
+        if (clip == null)
+        {
+            Debug.LogWarning("SoundManager: Background_Music.wav not found in Assets/Resources/Sounds/. Assign in Inspector or add the file.");
+            return;
+        }
+        if (musicSource.isPlaying && musicSource.clip == clip)
+            return;
+        musicSource.clip = clip;
+        musicSource.volume = backgroundMusicVolume;
+        musicSource.Play();
+    }
+
+    public void StopBackgroundMusic()
+    {
+        if (musicSource != null && musicSource.isPlaying)
+            musicSource.Stop();
     }
 }

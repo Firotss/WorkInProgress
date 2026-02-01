@@ -21,7 +21,7 @@ public class GameSetup : MonoBehaviour
     public void SetupGame()
     {
         Debug.Log("=== Setting up game scene ===");
-        
+
         CreateGameManager();
         CreatePlayer();
         CreateMonster();
@@ -30,16 +30,58 @@ public class GameSetup : MonoBehaviour
         CreateDeck();
         CreateHand();
         CreateEnemyAI();
-        
+
         if (createUICanvas)
         {
             CreateUI();
         }
-        
+
         CreateCamera();
         CreateLighting();
-        
+
         Debug.Log("=== Game setup complete! ===");
+    }
+
+    [ContextMenu("Refresh Start Panel")]
+    public void RefreshStartPanel()
+    {
+        GameObject startPanel = GameObject.Find("StartPanel");
+        if (startPanel == null)
+        {
+            Debug.LogWarning("StartPanel not found in scene!");
+            return;
+        }
+
+        string[] toRemove = { "StartTitle", "StartSubtitle", "StartPoster" };
+        foreach (string name in toRemove)
+        {
+            Transform t = startPanel.transform.Find(name);
+            if (t != null)
+                Destroy(t.gameObject);
+        }
+
+        // Set the poster  directly on the StartPanel
+        Image panelImg = startPanel.GetComponent<Image>();
+        if (panelImg != null)
+        {
+            Sprite posterSprite = Resources.Load<Sprite>("Arts/VISAGE_POSTER");
+            if (posterSprite != null)
+            {
+                panelImg.sprite = posterSprite;
+                panelImg.color = Color.white;
+            }
+        }
+
+        // Update play button position
+        Transform playBtn = startPanel.transform.Find("StartButton");
+        if (playBtn != null)
+        {
+            var btnRect = playBtn.GetComponent<RectTransform>();
+            if (btnRect != null)
+                btnRect.anchoredPosition = new Vector2(0, -80);
+        }
+
+        Debug.Log("Start panel refreshed with poster!");
     }
 
     private void CreateGameManager()
@@ -292,15 +334,18 @@ public class GameSetup : MonoBehaviour
         rect.offsetMax = Vector2.zero;
 
         Image bg = panel.AddComponent<Image>();
-        bg.color = new Color(0.08f, 0.08f, 0.15f, 0.98f);
+        Sprite posterSprite = Resources.Load<Sprite>("Arts/VISAGE_POSTER");
+        if (posterSprite != null)
+        {
+            bg.sprite = posterSprite;
+            bg.color = Color.white;
+        }
+        else
+        {
+            bg.color = new Color(0.08f, 0.08f, 0.15f, 0.98f);
+        }
 
-        GameObject titleObj = CreateText(panel.transform, "StartTitle", "CARD GAME", new Vector2(0, 120), 64);
-        if (titleObj != null)
-            titleObj.GetComponent<RectTransform>().sizeDelta = new Vector2(600, 80);
-
-        CreateText(panel.transform, "StartSubtitle", "Defeat the masks", new Vector2(0, 20), 28);
-
-        GameObject playBtn = CreateButton(panel.transform, "StartButton", "PLAY", new Vector2(0, -120), new Vector2(280, 80));
+        GameObject playBtn = CreateButton(panel.transform, "StartButton", "PLAY", new Vector2(0, -80), new Vector2(280, 80));
         if (playBtn != null)
         {
             Image btnImg = playBtn.GetComponent<Image>();
@@ -379,7 +424,7 @@ public class GameSetup : MonoBehaviour
         if (endTextObj != null)
             endTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(700, 100);
         CreateText(panel.transform, "GameEndSubtext", "You were defeated!", new Vector2(0, 0), 28);
-        CreateButton(panel.transform, "RestartButton", "PLAY AGAIN", new Vector2(0, -120), new Vector2(280, 70));
+        CreateButton(panel.transform, "RestartButton", "PLAY AGAIN", new Vector2(0, -80), new Vector2(280, 70));
 
         panel.SetActive(false);
     }

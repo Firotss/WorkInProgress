@@ -6,6 +6,60 @@ using UnityEditor.SceneManagement;
 
 public class SceneSetupEditor : Editor
 {
+    [MenuItem("Tools/Refresh Start Panel")]
+    public static void RefreshStartPanel()
+    {
+        GameObject startPanel = GameObject.Find("StartPanel");
+        if (startPanel == null)
+        {
+            Debug.LogWarning("StartPanel not found in scene!");
+            return;
+        }
+
+        // Remove old title, subtitle, and poster child if they exist
+        string[] toRemove = { "StartTitle", "StartSubtitle", "StartPoster" };
+        foreach (string name in toRemove)
+        {
+            Transform t = startPanel.transform.Find(name);
+            if (t != null)
+                DestroyImmediate(t.gameObject);
+        }
+
+        var panelImg = startPanel.GetComponent<UnityEngine.UI.Image>();
+        if (panelImg != null)
+        {
+            Sprite posterSprite = Resources.Load<Sprite>("Arts/VISAGE_POSTER");
+            if (posterSprite == null)
+            {
+                Texture2D tex = Resources.Load<Texture2D>("Arts/VISAGE_POSTER");
+                if (tex != null)
+                    posterSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+            }
+
+            if (posterSprite != null)
+            {
+                panelImg.sprite = posterSprite;
+                panelImg.color = Color.white;
+                EditorUtility.SetDirty(panelImg);
+                Debug.Log("Poster applied to StartPanel!");
+            }
+        }
+
+        Transform playBtn = startPanel.transform.Find("StartButton");
+        if (playBtn != null)
+        {
+            var btnRect = playBtn.GetComponent<RectTransform>();
+            if (btnRect != null)
+            {
+                btnRect.anchoredPosition = new Vector2(0, -80);
+                EditorUtility.SetDirty(btnRect);
+            }
+        }
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        Debug.Log("Start panel refreshed!");
+    }
+
     [MenuItem("Tools/Setup Game Scene")]
     public static void SetupGameScene()
     {
@@ -344,15 +398,18 @@ public class SceneSetupEditor : Editor
         rect.offsetMax = Vector2.zero;
 
         UnityEngine.UI.Image bg = panel.AddComponent<UnityEngine.UI.Image>();
-        bg.color = new Color(0.08f, 0.08f, 0.15f, 0.98f);
+        Sprite posterSprite = Resources.Load<Sprite>("Arts/VISAGE_POSTER");
+        if (posterSprite != null)
+        {
+            bg.sprite = posterSprite;
+            bg.color = Color.white;
+        }
+        else
+        {
+            bg.color = new Color(0.08f, 0.08f, 0.15f, 0.98f);
+        }
 
-        GameObject titleObj = CreateText(panel.transform, "StartTitle", "CARD GAME", new Vector2(0, 120), 64);
-        if (titleObj != null)
-            titleObj.GetComponent<RectTransform>().sizeDelta = new Vector2(600, 80);
-
-        CreateText(panel.transform, "StartSubtitle", "Defeat the masks", new Vector2(0, 20), 28);
-
-        GameObject playBtn = CreateButton(panel.transform, "StartButton", "PLAY", new Vector2(0, -120), new Vector2(280, 80));
+        GameObject playBtn = CreateButton(panel.transform, "StartButton", "PLAY", new Vector2(0, -80), new Vector2(280, 80));
         if (playBtn != null)
         {
             var btnImg = playBtn.GetComponent<UnityEngine.UI.Image>();
@@ -438,7 +495,7 @@ public class SceneSetupEditor : Editor
         if (endTextObj != null)
             endTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(700, 100);
         CreateText(panel.transform, "GameEndSubtext", "You were defeated!", new Vector2(0, 0), 28);
-        CreateButton(panel.transform, "RestartButton", "PLAY AGAIN", new Vector2(0, -120), new Vector2(280, 70));
+        CreateButton(panel.transform, "RestartButton", "PLAY AGAIN", new Vector2(0, -80), new Vector2(280, 70));
 
         panel.SetActive(false);
     }

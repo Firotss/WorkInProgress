@@ -153,10 +153,12 @@ public class GameManager : MonoBehaviour
         
         SetGameState(GameState.PlayerTurn);
         OnGameStarted?.Invoke();
-        
+
+        SoundManager.Instance?.PlayBackgroundMusic();
+
         // Сброс счетчика перед первым ходом
-        StartNewTurn(); 
-        
+        StartNewTurn();
+
         turnManager.StartTurn();
     }
 
@@ -437,10 +439,10 @@ public class GameManager : MonoBehaviour
         var finalLines = new List<DialogueManager.DialogueLine>
         {
             new DialogueManager.DialogueLine("Player", "That power... it came from the bathrobe. Give it to me!", true),
-            new DialogueManager.DialogueLine("Unmasked Alex",
+            new DialogueManager.DialogueLine("Sasho",
                 "You think you are worthy? You are nothing. I will NEVER give it to you.", false),
             new DialogueManager.DialogueLine("Player", "If I won't have it, then no one will!", true),
-            new DialogueManager.DialogueLine("Unmasked Alex",
+            new DialogueManager.DialogueLine("Sasho",
                 "Fool. You dare threaten me? With a single spell the entity blasts you back. BEGONE FROM MY DOMAIN!", false)
         };
 
@@ -466,6 +468,7 @@ public class GameManager : MonoBehaviour
     public void RestartGame()
     {
         Debug.Log("Restarting game - returning to start screen...");
+        SoundManager.Instance?.StopBackgroundMusic();
         turnManager.Reset();
 
         // Reset entities immediately to restore positions
