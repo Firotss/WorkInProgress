@@ -13,11 +13,12 @@ public class Monster : MonoBehaviour
     [SerializeField] private int attackDamage = 10;
     [SerializeField] private int totalStages = 3;
     
-    [Header("Stage Colors")]
-    [SerializeField] private Color stage1Color = new Color(0.2f, 0.8f, 0.2f);  // Green
-    [SerializeField] private Color stage2Color = new Color(0.9f, 0.8f, 0.1f);  // Yellow
-    [SerializeField] private Color stage3Color = new Color(0.9f, 0.2f, 0.2f);  // Red
-    
+    [Header("Stage Sprites")]
+    [SerializeField] private Sprite stage1Sprite;  // Green
+    [SerializeField] private Sprite stage2Sprite;  // Yellow
+    [SerializeField] private Sprite stage3Sprite;  // Red
+    [SerializeField] private Sprite defaultSprite;  // Red
+
     /// <summary>
     /// Current health of the monster in this stage.
     /// </summary>
@@ -63,7 +64,7 @@ public class Monster : MonoBehaviour
     /// </summary>
     public event Action<int, int> OnDamageTaken; // current health, max health
 
-    private Renderer monsterRenderer;
+    private SpriteRenderer monsterRenderer;
     private MonsterVisual monsterVisual;
     private Vector3 initialPosition;
     private Quaternion initialRotation;
@@ -79,7 +80,7 @@ public class Monster : MonoBehaviour
         initialScale = transform.localScale;
         CurrentStage = 1;
         CurrentHealth = healthPerStage;
-        monsterRenderer = GetComponent<Renderer>();
+        monsterRenderer = GetComponent<SpriteRenderer>();
         monsterVisual = GetComponent<MonsterVisual>();
         UpdateVisualAppearance();
     }
@@ -134,13 +135,12 @@ public class Monster : MonoBehaviour
     {
         if (monsterRenderer == null)
         {
-            monsterRenderer = GetComponent<Renderer>();
+            monsterRenderer = GetComponent<SpriteRenderer>();
         }
-        
         if (monsterRenderer != null)
         {
-            Color stageColor = GetStageColor();
-            monsterRenderer.material.color = stageColor;
+            Sprite stageColor = GetStageColor();
+            monsterRenderer.sprite = stageColor;
         }
     }
 
@@ -148,14 +148,14 @@ public class Monster : MonoBehaviour
     /// Gets the color for the current stage.
     /// </summary>
     /// <returns>Color for the current stage.</returns>
-    public Color GetStageColor()
+    public Sprite GetStageColor()
     {
         return CurrentStage switch
         {
-            1 => stage1Color,
-            2 => stage2Color,
-            3 => stage3Color,
-            _ => Color.white
+            1 => stage1Sprite,
+            2 => stage2Sprite,
+            3 => stage3Sprite,
+            _ => defaultSprite
         };
     }
 

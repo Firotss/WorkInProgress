@@ -12,11 +12,11 @@ public class MonsterVisual : MonoBehaviour
     
     [Header("Visual Settings")]
     [SerializeField] private float damageFlashDuration = 0.2f;
-    [SerializeField] private Color damageFlashColor = Color.white;
+    [SerializeField] private Sprite damageFlashColor;
     [SerializeField] private float stageTransitionDuration = 0.5f;
     
-    private Renderer monsterRenderer;
-    private Color currentStageColor;
+    private SpriteRenderer monsterRenderer;
+    private Sprite currentStageColor;
     private bool isFlashing;
 
     /// <summary>
@@ -24,7 +24,7 @@ public class MonsterVisual : MonoBehaviour
     /// </summary>
     private void Awake()
     {
-        monsterRenderer = GetComponent<Renderer>();
+        monsterRenderer = GetComponent<SpriteRenderer>();
         
         if (monster == null)
         {
@@ -96,7 +96,7 @@ public class MonsterVisual : MonoBehaviour
         if (monster == null || monsterRenderer == null) return;
         
         currentStageColor = monster.GetStageColor();
-        monsterRenderer.material.color = currentStageColor;
+        monsterRenderer.sprite= currentStageColor;
     }
 
     /// <summary>
@@ -135,12 +135,12 @@ public class MonsterVisual : MonoBehaviour
         
         if (monsterRenderer != null)
         {
-            Color originalColor = monsterRenderer.material.color;
-            monsterRenderer.material.color = damageFlashColor;
+            Sprite originalColor = monsterRenderer.sprite;
+            monsterRenderer.sprite = damageFlashColor;
             
             yield return new WaitForSeconds(damageFlashDuration);
             
-            monsterRenderer.material.color = currentStageColor;
+            monsterRenderer.sprite = currentStageColor;
         }
         
         isFlashing = false;
@@ -153,8 +153,8 @@ public class MonsterVisual : MonoBehaviour
     {
         if (monster == null || monsterRenderer == null) yield break;
         
-        Color oldColor = currentStageColor;
-        Color newColor = monster.GetStageColor();
+        Sprite oldColor = currentStageColor;
+        Sprite newColor = monster.GetStageColor();
         
         // Shake effect
         Vector3 originalPosition = transform.position;
@@ -168,7 +168,6 @@ public class MonsterVisual : MonoBehaviour
             float t = elapsed / shakeDuration;
             
             // Interpolate color
-            monsterRenderer.material.color = Color.Lerp(oldColor, newColor, t);
             
             // Shake position
             Vector3 shakeOffset = new Vector3(
@@ -184,7 +183,7 @@ public class MonsterVisual : MonoBehaviour
         // Ensure final state
         transform.position = originalPosition;
         currentStageColor = newColor;
-        monsterRenderer.material.color = currentStageColor;
+        monsterRenderer.sprite = currentStageColor;
         
         Debug.Log($"Monster transitioned to stage {monster.CurrentStage}");
     }
@@ -199,9 +198,9 @@ public class MonsterVisual : MonoBehaviour
         // Flash rapidly
         for (int i = 0; i < 5; i++)
         {
-            monsterRenderer.material.color = Color.white;
+            monsterRenderer.sprite = damageFlashColor;
             yield return new WaitForSeconds(0.1f);
-            monsterRenderer.material.color = currentStageColor;
+            monsterRenderer.sprite = currentStageColor;
             yield return new WaitForSeconds(0.1f);
         }
         
