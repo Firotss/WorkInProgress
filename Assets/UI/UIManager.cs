@@ -160,7 +160,7 @@ public class UIManager : MonoBehaviour
         if (startButton == null)
             startButton = FindButtonByName("StartButton");
         if (introductionButton == null)
-            introductionButton = FindButtonByName("IntroductionButton");
+            introductionButton = FindButtonByName("HelpButton");
 
         // Find buttons by name
         if (endTurnButton == null)
@@ -194,19 +194,19 @@ public class UIManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Creates the Introduction button on the start panel if missing.
+    /// Creates the Help button on the start panel if missing.
     /// </summary>
     private void EnsureIntroductionButton()
     {
         if (introductionButton != null || startPanel == null) return;
 
-        GameObject btnObj = new GameObject("IntroductionButton");
+        GameObject btnObj = new GameObject("HelpButton");
         btnObj.transform.SetParent(startPanel.transform, false);
         RectTransform btnRect = btnObj.AddComponent<RectTransform>();
         btnRect.anchorMin = new Vector2(0.5f, 0.5f);
         btnRect.anchorMax = new Vector2(0.5f, 0.5f);
         btnRect.pivot = new Vector2(0.5f, 0.5f);
-        btnRect.anchoredPosition = new Vector2(0f, -220f);
+        btnRect.anchoredPosition = new Vector2(0f, -300f);
         btnRect.sizeDelta = new Vector2(280f, 56f);
 
         Image btnImg = btnObj.AddComponent<Image>();
@@ -221,7 +221,7 @@ public class UIManager : MonoBehaviour
         textRect.offsetMin = Vector2.zero;
         textRect.offsetMax = Vector2.zero;
         TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
-        tmp.text = "Introduction";
+        tmp.text = "Help";
         tmp.fontSize = 28;
         tmp.color = Color.white;
         tmp.alignment = TMPro.TextAlignmentOptions.Center;
